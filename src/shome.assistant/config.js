@@ -9,4 +9,8 @@ config.model = {
     hotwords: 'santiago'
 };
 
+config.dialogflow = {
+    projectId: '***REMOVED***'
+};
+
 module.exports = config;
