@@ -1,13 +1,14 @@
 const record = require('node-record-lpcm16');
 const Detector = require('snowboy').Detector;
 const Models = require('snowboy').Models;
+var config = require('./config');
 
 const models = new Models();
 
 models.add({
-  file: 'resources/models/santiago.pmdl',
-  sensitivity: '0.5',
-  hotwords : 'santiago'
+  file: config.model.file,
+  sensitivity: config.model.sensitivity,
+  hotwords : config.model.hotwords
 });
 
 const detector = new Detector({
