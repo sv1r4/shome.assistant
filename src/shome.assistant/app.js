@@ -3,6 +3,9 @@ const Detector = require('snowboy').Detector;
 const Models = require('snowboy').Models;
 const config = require('./config');
 const dialogflow = require('dialogflow');
+const pump = require('pump');
+const through2 = require('through2');
+
 const projectId = process.env.Dialogflow__ProjectId || config.dialogflow.projectId;
 const sessionId = "todo-gen-session";
 // Instantiates a session client
@@ -51,7 +54,7 @@ const detectStream = sessionClient
   });
 
   // Write the initial stream request to config for audio input.
-//detectStream.write(initialStreamRequest);
+detectStream.write(initialStreamRequest);
 console.log('snow');
 
 //snowboy:
@@ -92,6 +95,19 @@ detector.on('hotword', function (index, hotword, buffer) {
   // data after the hotword.
   console.log(buffer);
   console.log('hotword', index, hotword);
+   
+  mic.unpipe(detector);
+
+  mic.unpipe(detectStream);
+  mic.pipe(detectStream);
+  // pump(
+  //   mic,
+  //   // Format the audio stream into the request format.
+  //   through2.obj((obj, _, next) => {
+  //     next(null, {inputAudio: obj});
+  //   }),
+  //   detectStream
+  // );
 });
 
 const mic = record.start({

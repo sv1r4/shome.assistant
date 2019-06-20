@@ -28,6 +28,5 @@ RUN npm run prepublish
 FROM base as final
 COPY --from=node-deps /app/node_modules ./node_modules
 COPY --from=node-deps /app/snowboy ./node_modules/snowboy
-COPY ./secrets ./secrets
 COPY . .
 CMD node app.js
