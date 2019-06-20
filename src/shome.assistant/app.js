@@ -6,9 +6,9 @@ var config = require('./config');
 const models = new Models();
 
 models.add({
-  file: config.model.file,
-  sensitivity: config.model.sensitivity,
-  hotwords : config.model.hotwords
+  file: process.env.Model__File || config.model.file,
+  sensitivity: process.env.Model__Sensitivity || config.model.sensitivity,
+  hotwords : process.env.Model__Hotwords || config.model.hotwords
 });
 
 const detector = new Detector({
