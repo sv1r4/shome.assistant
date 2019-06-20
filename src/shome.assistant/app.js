@@ -1,7 +1,7 @@
 const record = require('node-record-lpcm16');
 const Detector = require('snowboy').Detector;
 const Models = require('snowboy').Models;
-var config = require('./config');
+const config = require('./config');
 
 const models = new Models();
 
