@@ -6,6 +6,8 @@ const dialogflow = require('dialogflow');
 const pump = require('pump');
 const through2 = require('through2');
 const {struct} = require('pb-util');
+const util = require('util');
+const fs = require('fs');
 
 const projectId = process.env.Dialogflow__ProjectId || config.dialogflow.projectId;
 const sessionId = "todo-gen-session";
@@ -105,13 +107,20 @@ detector.on('hotword', function (index, hotword, buffer) {
   console.log('hotword', index, hotword);
   
   //record.stop();
-  detectDialogIntent();
-
-
+ // detectDialogIntent();
 });
 
-detectDialogIntent();
+//detectDialogIntent();
 //detectHotword();
+(async () => {
+  try {      
+    await testTts();
+  } catch (e) {
+    console.log(e);
+      // Deal with the fact the chain failed
+  }
+})();
+detectHotword();
 
 function detectHotword(){
   record.start({
@@ -183,4 +192,28 @@ function logQueryResult(sessionClient, result) {
       console.log(`      parameters: ${contextParameters}`);
     });
   }
+}
+
+
+async function testTts(){
+  const request = {
+    session: sessionPath,
+    queryInput: {
+      text: {
+        text: "привет",
+        languageCode: languageCode,
+      },
+    },
+    outputAudioConfig: {
+      audioEncoding: `OUTPUT_AUDIO_ENCODING_LINEAR_16`,
+    },
+  };
+
+  var outputFile = "test.wav"
+  const responses = await sessionClient.detectIntent(request);
+  console.log('Detected intent:');
+  const audioFile = responses[0].outputAudio;
+  await util.promisify(fs.writeFile)(outputFile, audioFile, 'binary');
+  console.log(`Audio content written to file: ${outputFile}`);
+
 }
