@@ -24,7 +24,7 @@ build:images:
     - docker:dind    
   script:    
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    - export CTAG = registry.gitlab.com/sv1r4/shome.assistant:$TAG;
+    - export CTAG = registry.gitlab.com/sv1r4/shome.assistant:$TAG
     - docker build -t CTAG  /src/shome.assitant
     - docker push CTAG
 
