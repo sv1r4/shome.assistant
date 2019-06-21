@@ -5,6 +5,7 @@
   "dependencies": {
     "dialogflow": "^0.10.1",
     "node-record-lpcm16": "^0.3.1",
+    "pb-util": "^0.1.1",
     "pump": "^3.0.0",
     "through2": "^3.0.1"
   }

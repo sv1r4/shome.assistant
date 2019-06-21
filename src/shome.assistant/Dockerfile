@@ -16,14 +16,17 @@ RUN apt-get update && apt-get install -y git \
    g++ \
    node-gyp \
    node-pre-gyp
-COPY package.json .
-RUN npm install --only=production 
-
 RUN git clone https://github.com/Kitt-AI/snowboy.git
 WORKDIR /app/snowboy
 RUN npm install
 RUN ./node_modules/node-pre-gyp/bin/node-pre-gyp clean configure build
 RUN npm run prepublish 
+
+WORKDIR /app
+COPY package.json .
+RUN npm install --only=production 
+
+
 
 FROM base as final
 COPY --from=node-deps /app/node_modules ./node_modules

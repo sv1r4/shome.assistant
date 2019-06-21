@@ -5,6 +5,7 @@ const config = require('./config');
 const dialogflow = require('dialogflow');
 const pump = require('pump');
 const through2 = require('through2');
+const {struct} = require('pb-util');
 
 const projectId = process.env.Dialogflow__ProjectId || config.dialogflow.projectId;
 const sessionId = "todo-gen-session";
@@ -34,14 +35,18 @@ const initialStreamRequest = {
       sampleRateHertz: sampleRateHertz,
       languageCode: languageCode,
     },
-    singleUtterance: true,
+    singleUtterance: false,
   },
 };
 
 // Create a stream for the streaming request.
 const detectStream = sessionClient
   .streamingDetectIntent()
-  .on('error', console.error)
+  .on('error', error => {
+    console.log(error);
+    //record.stop();
+    //detectHotword();
+  })
   .on('data', data => {
     if (data.recognitionResult) {
       console.log(
@@ -49,12 +54,15 @@ const detectStream = sessionClient
       );
     } else {
       console.log(`Detected intent:`);
+      
       logQueryResult(sessionClient, data.queryResult);
+
+     // record.stop();
+      //detectHotword();
+      detectDialogIntent();
     }
   });
 
-  // Write the initial stream request to config for audio input.
-detectStream.write(initialStreamRequest);
 console.log('snow');
 
 //snowboy:
@@ -84,8 +92,8 @@ detector.on('sound', function (buffer) {
   console.log('sound');
 });
 
-detector.on('error', function () {
-  console.log('error');
+detector.on('error', error=> {
+  console.log(error);
 });
 
 detector.on('hotword', function (index, hotword, buffer) {
@@ -95,11 +103,43 @@ detector.on('hotword', function (index, hotword, buffer) {
   // data after the hotword.
   console.log(buffer);
   console.log('hotword', index, hotword);
-   
-  mic.unpipe(detector);
+  
+  //record.stop();
+  detectDialogIntent();
 
-  mic.unpipe(detectStream);
-  mic.pipe(detectStream);
+
+});
+
+detectDialogIntent();
+//detectHotword();
+
+function detectHotword(){
+  record.start({
+    sampleRateHertz: sampleRateHertz,
+    threshold: 0, //silence threshold
+    recordProgram: 'rec', // Try also "arecord" or "sox"
+    silence: '1.0', //seconds of silence before ending
+    verbose: true
+  }).pipe(detector);
+}
+
+
+ function detectDialogIntent(){
+ // record.stop();
+  record
+    .start({
+      sampleRateHertz: sampleRateHertz,
+      threshold: 0.4, //silence threshold
+      recordProgram: 'rec', // Try also "arecord" or "sox"
+      silence: '1.0', //seconds of silence before ending
+      verbose: true
+    })
+    .on('error', error => {console.log(error);})
+    .pipe(through2.obj((obj, _, next) => {
+      next(null, {inputAudio: obj});
+    }))
+    .pipe(detectStream);
+
   // pump(
   //   mic,
   //   // Format the audio stream into the request format.
@@ -108,12 +148,39 @@ detector.on('hotword', function (index, hotword, buffer) {
   //   }),
   //   detectStream
   // );
-});
 
-const mic = record.start({
-  threshold: 0,
-  verbose: true
-});
 
-mic.pipe(detector);
+  // Write the initial stream request to config for audio input.
+  detectStream.write(initialStreamRequest);
+  
+}
 
+function logQueryResult(sessionClient, result) {
+  // Imports the Dialogflow library
+  const dialogflow = require('dialogflow');
+
+  // Instantiates a context client
+  const contextClient = new dialogflow.ContextsClient();
+
+  console.log(`  Query: ${result.queryText}`);
+  console.log(`  Response: ${result.fulfillmentText}`);
+  if (result.intent) {
+    console.log(`  Intent: ${result.intent.displayName}`);
+  } else {
+    console.log(`  No intent matched.`);
+  }
+  //const parameters = JSON.stringify(struct.decode(result.parameters));
+  //console.log(`  Parameters: ${parameters}`);
+  if (result.outputContexts && result.outputContexts.length) {
+    console.log(`  Output contexts:`);
+    result.outputContexts.forEach(context => {
+      const contextId = contextClient.matchContextFromContextName(context.name);
+      const contextParameters = JSON.stringify(
+        struct.decode(context.parameters)
+      );
+      console.log(`    ${contextId}`);
+      console.log(`      lifespan: ${context.lifespanCount}`);
+      console.log(`      parameters: ${contextParameters}`);
+    });
+  }
+}
