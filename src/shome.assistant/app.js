@@ -120,7 +120,7 @@ detector.on('hotword', function (index, hotword, buffer) {
       // Deal with the fact the chain failed
   }
 })();
-detectHotword();
+//detectHotword();
 
 function detectHotword(){
   record.start({

@@ -1,6 +1,7 @@
 stages: 
   - build
-  - deploy
+  - test
+#  - deploy
 
 variables:  
   ASPNETCORE_ENVIRONMENT: Production  
@@ -13,6 +14,8 @@ before_script:
   #- export TAG=$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_IID-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`.$CI_PIPELINE_ID
   - export TAG=$MAJOR_VERSION.$MINOR_VERSION-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`-$CI_PIPELINE_ID
   - echo $TAG
+  - export TAG=shome.assistant:$TAG
+  - echo $TAG
 
     
 build:images:
@@ -23,12 +26,21 @@ build:images:
   services:
     - docker:dind    
   script:    
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    - export CTAG = registry.gitlab.com/sv1r4/shome.assistant:$TAG
-    - docker build -t CTAG  /src/shome.assitant
-    - docker push CTAG
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com    
+    - docker build -t $TAG  /src/shome.assitant
+    - docker push $TAG
 
-    
+test:    
+  image: docker
+  stage: test
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com   
+    - mkdir ./secrets 
+    - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
+    - echo $GOOGLE_APPLICATION_CREDENTIALS
+    - docker run -v ./secrets:/secrets   -e 'GOOGLE_APPLICATION_CREDENTIALS=/secrets/df_key.json' $TAG
 # deploy:rpi-server:
 #   stage: deploy
 #   variables:
