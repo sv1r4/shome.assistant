@@ -14,7 +14,7 @@ before_script:
   #- export TAG=$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_IID-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`.$CI_PIPELINE_ID
   - export TAG=$MAJOR_VERSION.$MINOR_VERSION-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`-$CI_PIPELINE_ID
   - echo $TAG
-  - export TAG=shome.assistant:$TAG
+  - export TAG=registry.gitlab.com/sv1r4/shome.assistant:$TAG
   - echo $TAG
 
     
