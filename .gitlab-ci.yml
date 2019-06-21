@@ -1,6 +1,6 @@
 stages: 
   - build
-  - test
+#  - test
 #  - deploy
 
 variables:  
@@ -30,17 +30,19 @@ build:images:
     - docker build -t $TAG ./src/shome.assistant
     - docker push $TAG
 
-test:    
-  image: docker
-  stage: test
-  services:
-    - docker:dind
-  script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com   
-    - mkdir ./secrets 
-    - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
-    - echo $GOOGLE_APPLICATION_CREDENTIALS
-    - docker run -v ./secrets:/secrets   -e 'GOOGLE_APPLICATION_CREDENTIALS=/secrets/df_key.json' $TAG
+# test:    
+#   image: docker
+#   stage: test
+#   services:
+#     - docker:dind
+#   script:
+#     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com   
+#     - mkdir ./secrets 
+#     - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
+#     - echo $GOOGLE_APPLICATION_CREDENTIALS
+#     - docker run -v ./secrets:/secrets   -e 'GOOGLE_APPLICATION_CREDENTIALS=/secrets/df_key.json' $TAG
+
+
 # deploy:rpi-server:
 #   stage: deploy
 #   variables:
