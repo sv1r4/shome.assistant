@@ -1,0 +1,45 @@
+stages: 
+  - build
+  - deploy
+
+variables:  
+  ASPNETCORE_ENVIRONMENT: Production  
+  COMPOSE_HTTP_TIMEOUT: "1200"
+  MAJOR_VERSION: 0
+  MINOR_VERSION: 0
+  STACK: shome-apps
+
+before_script:  
+  #- export TAG=$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_IID-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`.$CI_PIPELINE_ID
+  - export TAG=$MAJOR_VERSION.$MINOR_VERSION-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`-$CI_PIPELINE_ID
+  - echo $TAG
+
+    
+build:images:
+  image: tmaier/docker-compose
+  stage: build
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  services:
+    - docker:dind    
+  script:    
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - export CTAG = registry.gitlab.com/sv1r4/shome.assistant:$TAG;
+    - docker build -t CTAG  /src/shome.assitant
+    - docker push CTAG
+
+    
+# deploy:rpi-server:
+#   stage: deploy
+#   variables:
+#     IMAGE_PREFIX: registry.gitlab.com/sv1r4/shome.scenario/
+#     GIT_SUBMODULE_STRATEGY: none
+#   script:
+#     - echo "${IMAGE_PREFIX}<image>:${TAG}"
+#     - docker login -u $RPI_REGISTRY_USER -p $RPI_REGISTRY_PASSWORD registry.gitlab.com
+#     - docker stack deploy --with-registry-auth --compose-file ./docker-compose.deploy.yml $STACK
+#   only:
+#     - master
+#   tags:
+#     - rpi-server
+#     - shome
