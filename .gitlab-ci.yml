@@ -27,7 +27,7 @@ build:images:
     - docker:dind    
   script:    
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com    
-    - docker build -t $TAG ./src/shome.assitant
+    - docker build -t $TAG ./src/shome.assistant
     - docker push $TAG
 
 test:    
