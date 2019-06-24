@@ -46,8 +46,8 @@ const detectStream = sessionClient
   .streamingDetectIntent()
   .on('error', error => {
     console.log(error);
-    //record.stop();
-    //detectHotword();
+    record.stop();
+    detectHotword();
   })
   .on('data', data => {
     if (data.recognitionResult) {
@@ -59,8 +59,8 @@ const detectStream = sessionClient
       
       logQueryResult(sessionClient, data.queryResult);
 
-     // record.stop();
-      //detectHotword();
+      record.stop();
+      detectHotword();
       detectDialogIntent();
     }
   });
@@ -77,86 +77,95 @@ models.add({
   hotwords : process.env.Model__Hotwords || config.model.hotwords
 });
 
-const detector = new Detector({
-  resource: "resources/common.res",
-  models: models,
-  audioGain: 2.0,
-  applyFrontend: true
-});
-
-detector.on('silence', function () {
-  console.log('silence');
-});
-
-detector.on('sound', function (buffer) {
-  // <buffer> contains the last chunk of the audio that triggers the "sound"
-  // event. It could be written to a wav stream.
-  console.log('sound');
-});
-
-detector.on('error', error=> {
-  console.log(error);
-});
-
-detector.on('hotword', function (index, hotword, buffer) {
-  // <buffer> contains the last chunk of the audio that triggers the "hotword"
-  // event. It could be written to a wav stream. You will have to use it
-  // together with the <buffer> in the "sound" event if you want to get audio
-  // data after the hotword.
-  console.log(buffer);
-  console.log('hotword', index, hotword);
-  
-  //record.stop();
- // detectDialogIntent();
-});
+var detector;
 
 //detectDialogIntent();
 //detectHotword();
-(async () => {
-  try {      
-    await testTts();
-  } catch (e) {
-    console.log(e);
-      // Deal with the fact the chain failed
-  }
-})();
-//detectHotword();
+// (async () => {
+//   try {      
+//     await testTts();
+//   } catch (e) {
+//     console.log(e);
+//       // Deal with the fact the chain failed
+//   }
+// })();
+detectHotword();
+record.stop();
+detectHotword();
 
 function detectHotword(){
-  record.start({
+  console.log("detectHotword");
+
+
+  detector = new Detector({
+    resource: "resources/common.res",
+    models: models,
+    audioGain: 2.0,
+    applyFrontend: true
+  });
+  
+  detector.on('silence', function () {
+    console.log('silence');
+  });
+  
+  detector.on('sound', function (buffer) {
+    // <buffer> contains the last chunk of the audio that triggers the "sound"
+    // event. It could be written to a wav stream.
+    console.log('sound');
+  });
+  
+  detector.on('error', error=> {
+    console.log(error);
+  });
+  
+  detector.on('hotword', function (index, hotword, buffer) {
+    // <buffer> contains the last chunk of the audio that triggers the "hotword"
+    // event. It could be written to a wav stream. You will have to use it
+    // together with the <buffer> in the "sound" event if you want to get audio
+    // data after the hotword.
+    console.log(buffer);
+    console.log('hotword', index, hotword);
+    
+    record.stop();
+    detectDialogIntent();
+  });
+
+  var mic = record.start({
     sampleRateHertz: sampleRateHertz,
     threshold: 0, //silence threshold
     recordProgram: 'rec', // Try also "arecord" or "sox"
     silence: '1.0', //seconds of silence before ending
     verbose: true
-  }).pipe(detector);
+  });//.pipe(detector);
+
+  pump(mic, detector);
 }
 
 
  function detectDialogIntent(){
- // record.stop();
-  record
-    .start({
+   console.log("detectDialogIntent");
+  var mic = record.start({
       sampleRateHertz: sampleRateHertz,
-      threshold: 0.4, //silence threshold
+      threshold: 0.5, //silence threshold
       recordProgram: 'rec', // Try also "arecord" or "sox"
       silence: '1.0', //seconds of silence before ending
       verbose: true
-    })
-    .on('error', error => {console.log(error);})
-    .pipe(through2.obj((obj, _, next) => {
-      next(null, {inputAudio: obj});
-    }))
-    .pipe(detectStream);
+    });
+   // setTimeout(()=>record.stop(), 10000);
+  //  .on('error', error => {console.log(error);})
+  //  .pipe(through2.obj((obj, _, next) => {
+  //    next(null, {inputAudio: obj});
+  //  }))
+  //  .pipe(detectStream);
 
-  // pump(
-  //   mic,
-  //   // Format the audio stream into the request format.
-  //   through2.obj((obj, _, next) => {
-  //     next(null, {inputAudio: obj});
-  //   }),
-  //   detectStream
-  // );
+   pump(
+     mic,
+     // Format the audio stream into the request format.
+     through2.obj((obj, _, next) => {
+       next(null, {inputAudio: obj});
+     }),
+     detectStream
+   );
 
 
   // Write the initial stream request to config for audio input.
