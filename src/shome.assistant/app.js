@@ -136,6 +136,9 @@ function detectHotword(){
           console.log(
             `Intermediate transcript: ${data.recognitionResult.transcript}`
           );
+          if(data.recognitionResult.transcript.length > 20){
+            record.stop();
+          }
         } else {
           console.log(`Detected intent:`);
           
@@ -149,7 +152,7 @@ function detectHotword(){
 
     var mic = record.start({
       sampleRateHertz: sampleRateHertz,
-      threshold: 0, //silence threshold
+      threshold: 0.5, //silence threshold
       recordProgram: 'rec', // Try also "arecord" or "sox"
       silence: '1.0', //seconds of silence before ending
       verbose: true
@@ -169,7 +172,7 @@ function detectHotword(){
      }),
      detectStream
    );
-  setTimeout(()=>record.stop(), 3000);
+  //setTimeout(()=>record.stop(), 3000);
 
   // Write the initial stream request to config for audio input.
   detectStream.write(initialStreamRequest);
