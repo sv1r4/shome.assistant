@@ -4,9 +4,9 @@
 var config = {};
 
 config.model = {
-    file: "resources/models/santiago.pmdl",
+    file: "resources/models/Alexa.pmdl",
     sensitivity: 0.5,
-    hotwords: 'santiago'
+    hotwords: 'Alexa'
 };
 
 config.dialogflow = {

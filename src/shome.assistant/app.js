@@ -76,7 +76,7 @@ function detectHotword(){
   detector = new Detector({
     resource: "resources/common.res",
     models: models,
-    audioGain: 2.0,
+    audioGain: 1.0,
     applyFrontend: true
   });
   
@@ -111,15 +111,30 @@ function detectHotword(){
 
   var mic = record.start({
     sampleRateHertz: sampleRateHertz,
-    threshold: 0.2, //silence threshold
+    threshold: 0, //silence threshold
     recordProgram: 'rec', // Try also "arecord" or "sox"
     silence: '1.0', //seconds of silence before ending
     verbose: true
-  });//.pipe(detector);
+  });
   
-  pump(mic, detector);
+  mic.pipe(detector);
+  
+ // pump(mic, detector);
 }
 
+var detectIntentTimeoutId;
+
+function reinitDetectIntentTimeout(ms, callback){
+  if(detectIntentTimeoutId){
+    clearTimeout(detectIntentTimeoutId);
+  }
+ detectIntentTimeoutId = setTimeout(()=>{
+   record.stop();
+   if(callback){
+     callback();
+   }
+  }, ms);
+}
 
  function detectDialogIntent(){
    console.log("detectDialogIntent");
@@ -136,23 +151,22 @@ function detectHotword(){
           console.log(
             `Intermediate transcript: ${data.recognitionResult.transcript}`
           );
-          if(data.recognitionResult.transcript.length > 20){
-            record.stop();
-          }
+
+          reinitDetectIntentTimeout(500, ()=>{console.log("transcript timeout");detectHotword();});
+         
         } else {
           console.log(`Detected intent:`);
           
           logQueryResult(sessionClient, data.queryResult);
 
-          record.stop();
-          detectHotword();
+          reinitDetectIntentTimeout(100, ()=>{console.log("detect timeout");detectHotword();});
         }
       });
 
 
     var mic = record.start({
       sampleRateHertz: sampleRateHertz,
-      threshold: 0.5, //silence threshold
+      threshold: 0, //silence threshold
       recordProgram: 'rec', // Try also "arecord" or "sox"
       silence: '1.0', //seconds of silence before ending
       verbose: true
@@ -172,7 +186,7 @@ function detectHotword(){
      }),
      detectStream
    );
-  //setTimeout(()=>record.stop(), 3000);
+   reinitDetectIntentTimeout(5000, ()=>console.log("initial timeout"));
 
   // Write the initial stream request to config for audio input.
   detectStream.write(initialStreamRequest);
