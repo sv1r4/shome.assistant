@@ -37,8 +37,12 @@ const initialStreamRequest = {
       sampleRateHertz: sampleRateHertz,
       languageCode: languageCode,
     },
-    singleUtterance: false,
-  },
+    singleUtterance: true,
+   }
+  ,
+   outputAudioConfig: {
+     audioEncoding: 'OUTPUT_AUDIO_ENCODING_LINEAR_16'
+   }
 };
 
 // Create a stream for the streaming request.
@@ -58,7 +62,7 @@ models.add({
 var detector;
 
 //detectDialogIntent();
-//detectHotword();
+// //detectHotword();
 // (async () => {
 //   try {      
 //     await testTts();
@@ -81,13 +85,13 @@ function detectHotword(){
   });
   
   detector.on('silence', function () {
-    console.log('silence');
+    //console.log('silence');
   });
   
   detector.on('sound', function (buffer) {
     // <buffer> contains the last chunk of the audio that triggers the "sound"
     // event. It could be written to a wav stream.
-    console.log('sound');
+    //console.log('sound');
   });
   
   detector.on('error', error=> {
@@ -112,9 +116,10 @@ function detectHotword(){
   var mic = record.start({
     sampleRateHertz: sampleRateHertz,
     threshold: 0, //silence threshold
+    thresholdStart: 0.5, //silence threshold
     recordProgram: 'rec', // Try also "arecord" or "sox"
     silence: '1.0', //seconds of silence before ending
-    verbose: true
+    verbose: false
   });
   
   mic.pipe(detector);
@@ -152,16 +157,34 @@ function reinitDetectIntentTimeout(ms, callback){
             `Intermediate transcript: ${data.recognitionResult.transcript}`
           );
 
-          reinitDetectIntentTimeout(500, ()=>{console.log("transcript timeout");detectHotword();});
+          reinitDetectIntentTimeout(1500, ()=>{console.log("transcript timeout");detectHotword();});
          
         } else {
           console.log(`Detected intent:`);
           
           logQueryResult(sessionClient, data.queryResult);
 
+        
+          if(data.outputAudio){
+            var outputFile = "response.wav";
+            const audioFile = data.outputAudio;
+            //console.log(audioFile);
+            fs.writeFileSync(outputFile, audioFile, 'binary');
+            console.log(`Audio content written to file: ${outputFile}`);          
+          }
+          
+          if(data.queryResult && data.queryResult.intent){
+          
+
+            const { exec } = require('child_process');
+            exec(`mplayer ${outputFile}`);
+          }
+
           reinitDetectIntentTimeout(100, ()=>{console.log("detect timeout");detectHotword();});
         }
+
       });
+       
 
 
     var mic = record.start({
@@ -169,8 +192,13 @@ function reinitDetectIntentTimeout(ms, callback){
       threshold: 0, //silence threshold
       recordProgram: 'rec', // Try also "arecord" or "sox"
       silence: '1.0', //seconds of silence before ending
-      verbose: true
+      verbose: false
     });
+
+
+    // Write the initial stream request to config for audio input.
+    detectStream.write(initialStreamRequest);
+
    // setTimeout(()=>record.stop(), 10000);
   //  .on('error', error => {console.log(error);})
   //  .pipe(through2.obj((obj, _, next) => {
@@ -182,28 +210,35 @@ function reinitDetectIntentTimeout(ms, callback){
      mic,
      // Format the audio stream into the request format.
      through2.obj((obj, _, next) => {
-       next(null, {inputAudio: obj});
+       next(null, {
+         
+         inputAudio: obj
+        });
      }),
      detectStream
    );
-   reinitDetectIntentTimeout(5000, ()=>console.log("initial timeout"));
+   reinitDetectIntentTimeout(2500, ()=>console.log("initial timeout"));
 
-  // Write the initial stream request to config for audio input.
-  detectStream.write(initialStreamRequest);
   
 }
 
 function logQueryResult(sessionClient, result) {
+  if(!result){
+    return;
+  }
   // Imports the Dialogflow library
   const dialogflow = require('dialogflow');
 
   // Instantiates a context client
   const contextClient = new dialogflow.ContextsClient();
 
+ // console.log(JSON.stringify(result));
   console.log(`  Query: ${result.queryText}`);
   console.log(`  Response: ${result.fulfillmentText}`);
   if (result.intent) {
     console.log(`  Intent: ${result.intent.displayName}`);
+    
+
   } else {
     console.log(`  No intent matched.`);
   }
@@ -242,7 +277,24 @@ async function testTts(){
   const responses = await sessionClient.detectIntent(request);
   console.log('Detected intent:');
   const audioFile = responses[0].outputAudio;
-  await util.promisify(fs.writeFile)(outputFile, audioFile, 'binary');
-  console.log(`Audio content written to file: ${outputFile}`);
+  console.log(audioFile);
+ // await util.promisify(fs.writeFile)(outputFile, audioFile, 'binary');
 
+  fs.writeFileSync(outputFile, audioFile, 'binary');
+
+  var player = require('play-sound')(opts = {})
+
+   
+
+  const { exec } = require('child_process');
+  
+  exec('mplayer test.wav');
+
+  // console.log(`Audio content written to file: ${outputFile}`);
+  // // $ mplayer foo.mp3 
+  // player.play(audioFile, function(err){
+  //   if (err) {console.log("PLay erro\n"+err)}
+  // })
+
+ 
 }
