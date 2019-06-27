@@ -45,12 +45,6 @@ const initialStreamRequest = {
    }
 };
 
-// Create a stream for the streaming request.
-
-console.log('snow');
-
-//snowboy:
-
 const models = new Models();
 
 models.add({
@@ -72,15 +66,16 @@ var detector;
 //   }
 // })();
 detectHotword();
-
+var counterHotWords = 0;
+var isPlayback = false;
 function detectHotword(){
-  console.log("detectHotword");
-
+  console.log("hotword listening..");
+  
 
   detector = new Detector({
     resource: "resources/common.res",
     models: models,
-    audioGain: 1.0,
+    audioGain: 2.0,
     applyFrontend: true
   });
   
@@ -99,12 +94,18 @@ function detectHotword(){
   });
   
   detector.on('hotword', function (index, hotword, buffer) {
+    if(isPlayback){
+      console.log(`playback ${isPlayback}. skip`);
+      
+      return;
+    }
     // <buffer> contains the last chunk of the audio that triggers the "hotword"
     // event. It could be written to a wav stream. You will have to use it
     // together with the <buffer> in the "sound" event if you want to get audio
     // data after the hotword.
-    console.log(buffer);
-    console.log('hotword', index, hotword);
+    //console.log(buffer);
+    counterHotWords++;
+    console.log('hotword #', counterHotWords, hotword);
     
     record.stop();
     mic.unpipe(detector);
@@ -116,9 +117,9 @@ function detectHotword(){
   var mic = record.start({
     sampleRateHertz: sampleRateHertz,
     threshold: 0, //silence threshold
-    thresholdStart: 0.5, //silence threshold
+    thresholdStart: 1, //silence threshold
     recordProgram: 'rec', // Try also "arecord" or "sox"
-    silence: '1.0', //seconds of silence before ending
+    silence: '0', //seconds of silence before ending
     verbose: false
   });
   
@@ -134,22 +135,26 @@ function reinitDetectIntentTimeout(ms, callback){
     clearTimeout(detectIntentTimeoutId);
   }
  detectIntentTimeoutId = setTimeout(()=>{
-   record.stop();
-   if(callback){
-     callback();
-   }
+   try{
+      record.stop();
+      if(callback){
+        callback();
+      }
+    }catch (err){
+      console.log(err);  
+    }
   }, ms);
 }
 
  function detectDialogIntent(){
-   console.log("detectDialogIntent");
+   console.log("waiting for command..");
 
    var detectStream = sessionClient
       .streamingDetectIntent()
       .on('error', error => {
         console.log("Detect Intent Error\n"+error);
-        record.stop();
-        detectHotword();
+
+        reinitDetectIntentTimeout(500, ()=>detectHotword());
       })
       .on('data', data => {
         if (data.recognitionResult) {
@@ -162,7 +167,7 @@ function reinitDetectIntentTimeout(ms, callback){
         } else {
           console.log(`Detected intent:`);
           
-          logQueryResult(sessionClient, data.queryResult);
+          logQueryResult(sessidetectDialogIntentonClient, data.queryResult);
 
         
           if(data.outputAudio){
@@ -172,10 +177,11 @@ function reinitDetectIntentTimeout(ms, callback){
             fs.writeFileSync(outputFile, audioFile, 'binary');
             console.log(`Audio content written to file: ${outputFile}`);          
           }
-          
+
           if(data.queryResult && data.queryResult.intent){
           
-
+            isPlayback = true;
+            setTimeout(()=>isPlayback = false, 4000);
             const { exec } = require('child_process');
             exec(`mplayer ${outputFile}`);
           }

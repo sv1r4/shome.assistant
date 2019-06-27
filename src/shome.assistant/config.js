@@ -5,7 +5,8 @@ var config = {};
 
 config.model = {
     file: "resources/models/Alexa.pmdl",
-    sensitivity: 0.5,
+    // sensitivity: 0.448,
+    sensitivity: 0.40,
     hotwords: 'Alexa'
 };
 
