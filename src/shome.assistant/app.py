@@ -1,11 +1,18 @@
+# encoding=utf8
+import sys
+
+#sys.setdefaultencoding('utf8')
+
 import argparse
 import os
 import platform
 import struct
-import sys
+
 import time
 from datetime import datetime
 from threading import Thread
+
+from six.moves import queue
 
 import numpy as np
 import pyaudio
@@ -32,20 +39,7 @@ class ShomeAssistant(Thread):
             model_file_path,
             keyword_file_paths,
             sensitivity=0.6,
-            input_device_index=None,
-            output_path=None):
-
-        """
-        Constructor.
-        :param library_path: Absolute path to Porcupine's dynamic library.
-        :param model_file_path: Absolute path to the model parameter file.
-        :param keyword_file_paths: List of absolute paths to keyword files.
-        :param sensitivity: Sensitivity parameter. For more information refer to 'include/pv_porcupine.h'. It uses the
-        same sensitivity value for all keywords.
-        :param input_device_index: Optional argument. If provided, audio is recorded from this input device. Otherwise,
-        the default audio input device is used.
-        :param output_path: If provided recorded audio will be stored in this location at the end of the run.
-        """
+            input_device_index=None):
 
         super(ShomeAssistant, self).__init__()
 
@@ -54,27 +48,49 @@ class ShomeAssistant(Thread):
         self._keyword_file_paths = keyword_file_paths
         self._sensitivity = float(sensitivity)
         self._input_device_index = input_device_index
-
-        self._output_path = output_path
-        if self._output_path is not None:
-            self._recorded_frames = []
+            
+        
+            
 
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
-
+#todo init in constructor
     _porcupine = None
     _pa = None
     _audio_stream = None
     _isHotwordDetect = False
-    _isIntentDtect = False
+    _isIntentDetect = False
+    _buff = queue.Queue()
+
 
     def stopDetectHotword(self):
         print("stop hotword detect")
         self._isHotwordDetect = False
-        if self._audio_stream is not None:
-            # self._audio_stream.stop_stream()
-            self._audio_stream.close()
+        try:
+            if self._audio_stream is not None:
+               # self._audio_stream.stop_stream()
+               self._audio_stream.close()
+            #if self._pa is not None:
+            #    self._pa.terminate()
+        
+        except:
+            print("stream error")
+        finally:
             self.runDetectIntent()
+    
+    def stopDetectIntent(self):
+        print("stop intent detect")
+        self._isIntentDetect = False
+        try:
+            if self._audio_stream is not None:
+                self._audio_stream.stop_stream()
+                self._audio_stream.close()                                        
+            if self._pa is not None:
+                self._pa.terminate()
+        except:
+            print("stream error")
+        finally:
+            self.runDetectHotword()
     
     def runDetectIntent(self):
         print("run detect intent")
@@ -89,11 +105,108 @@ class ShomeAssistant(Thread):
 
         session_path = session_client.session_path(project_id, session_id)
         print('Session path: {}\n'.format(session_path))
+      
+        def _audio_callback_intent(in_data, frame_count, time_info, status):
+            print("audio callback frame_count={0} status={1}".format(frame_count, status))
+            self._buff.put(in_data)            
+            return None, pyaudio.paContinue
 
-        while True:
-            if not self._isIntentDetect:
-                break
-            time.sleep(0.1)
+            
+        try:
+            num_channels = 1
+            audio_format = pyaudio.paInt16
+            frame_length = 4096 #self._porcupine.frame_length
+
+            audio_config = dialogflow.types.InputAudioConfig(
+            audio_encoding=audio_encoding, language_code=language_code,
+            sample_rate_hertz=sample_rate_hertz)
+           
+            
+            self._pa = pyaudio.PyAudio()
+            self._audio_stream = self._pa.open(
+                rate=sample_rate_hertz,
+                channels=num_channels,
+                format=audio_format,
+                input=True,
+                frames_per_buffer=frame_length,
+                input_device_index=self._input_device_index,
+                stream_callback=_audio_callback_intent)
+
+            self._audio_stream.start_stream()
+
+            print("Started detect intent with following settings:")
+            if self._input_device_index:
+                print("Input device: %d (check with --show_audio_devices_info)" % self._input_device_index)
+            else:
+                print("Input device: default (check with --show_audio_devices_info)")
+            print("Sample-rate: %d" % sample_rate_hertz)
+            print("Channels: %d" % num_channels)
+            print("Format: %d" % audio_format)
+            print("Frame-length: %d" % frame_length)
+            print("Waiting for command ...\n")
+
+            def request_generator(audio_config):
+                query_input = dialogflow.types.QueryInput(audio_config=audio_config)
+
+                # The first request contains the configuration.
+                yield dialogflow.types.StreamingDetectIntentRequest(
+                    session=session_path, query_input=query_input, single_utterance=True)
+
+                while True:
+                    #try:
+                        chunk = self._buff.get()
+                        if chunk is None:
+                            print("chunk none")
+                            return
+                        if not self._isIntentDetect:
+                            print("done intent")
+                            return
+                        print("stream chunk")
+                        yield dialogflow.types.StreamingDetectIntentRequest(
+                            input_audio=chunk)  
+                    #except queue.Empty:
+                      #  print("queue empty")
+                      #  break
+
+                         
+            requests = request_generator(audio_config)
+            responses = session_client.streaming_detect_intent(requests)
+
+            print('=' * 20)
+            for response in responses:
+                print('Stream response {0}'.format(response))
+                if response.recognition_result.is_final:
+                    self._isIntentDetect = False
+
+            self.stopDetectIntent()    
+
+           
+        except KeyboardInterrupt:
+            print('stopping ...')
+        finally:
+            if self._audio_stream is not None:
+                self._audio_stream.stop_stream()
+                self._audio_stream.close()
+
+            if self._pa is not None:
+                self._pa.terminate()
+
+            # delete Porcupine last to avoid segfault in callback.
+            if self._porcupine is not None:
+                self._porcupine.delete()
+            
+     
+        # # Note: The result from the last response is the final transcript along
+        # # with the detected content.
+        # query_result = response.query_result
+
+        # print('=' * 20)
+        # print('Query text: {}'.format(query_result.query_text))
+        # print('Detected intent: {} (confidence: {})\n'.format(
+        #     query_result.intent.display_name,
+        #     query_result.intent_detection_confidence))
+        # print('Fulfillment text: {}\n'.format(
+        #     query_result.fulfillment_text))
 
 
 
@@ -112,16 +225,13 @@ class ShomeAssistant(Thread):
                 if num_keywords == 1 and result:
                     print('[%s] detected keyword' % str(datetime.now()))
                     self.stopDetectHotword()
-                    return None, pyaudio.paAbort
                     # add your own code execution here ... it will not block the recognition
                 elif num_keywords > 1 and result >= 0:
                     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
                     # or add it here if you use multiple keywords
-                    return None, pyaudio.paAbort
+                    self.stopDetectHotword()
 
-                if self._output_path is not None:
-                    self._recorded_frames.append(pcm)
-            
+                
             return None, pyaudio.paContinue
 
         
@@ -133,12 +243,12 @@ class ShomeAssistant(Thread):
                 keyword_file_paths=self._keyword_file_paths,
                 sensitivities=[self._sensitivity] * num_keywords)
 
-            self._pa = pyaudio.PyAudio()
             sample_rate = self._porcupine.sample_rate
             num_channels = 1
             audio_format = pyaudio.paInt16
             frame_length = self._porcupine.frame_length
             
+            self._pa = pyaudio.PyAudio()
             self._audio_stream = self._pa.open(
                 rate=sample_rate,
                 channels=num_channels,
@@ -181,13 +291,11 @@ class ShomeAssistant(Thread):
             if self._porcupine is not None:
                 self._porcupine.delete()
 
-            if self._output_path is not None and sample_rate is not None and len(self._recorded_frames) > 0:
-                recorded_audio = np.concatenate(self._recorded_frames, axis=0).astype(np.int16)
-                soundfile.write(self._output_path, recorded_audio, samplerate=sample_rate, subtype='PCM_16')
-    
+           
 
     def run(self):
-        self.runDetectHotword()
+        #self.runDetectHotword()
+        self.runDetectIntent()
 
     @classmethod
     def show_audio_devices_info(cls):
@@ -240,11 +348,7 @@ if __name__ == '__main__':
     parser.add_argument('--sensitivity', help='detection sensitivity [0, 1]', default=0.5)
     parser.add_argument('--input_audio_device_index', help='index of input audio device', type=int, default=None)
 
-    parser.add_argument(
-        '--output_path',
-        help='absolute path to where recorded audio will be stored. If not set, it will be bypassed.',
-        type=str,
-        default=None)
+  
 
     parser.add_argument('--show_audio_devices_info', action='store_true')
 
@@ -261,6 +365,5 @@ if __name__ == '__main__':
             model_file_path=args.model_file_path,
             keyword_file_paths=[x.strip() for x in args.keyword_file_paths.split(',')],
             sensitivity=args.sensitivity,
-            output_path=args.output_path,
             input_device_index=args.input_audio_device_index
         ).run()
