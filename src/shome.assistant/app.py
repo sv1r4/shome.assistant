@@ -1,19 +1,3 @@
-#
-# Copyright 2018 Picovoice Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
 import argparse
 import os
 import platform
@@ -27,12 +11,14 @@ import numpy as np
 import pyaudio
 import soundfile
 
+import dialogflow_v2 as dialogflow
+
 sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
 
 from porcupine import Porcupine
 
 
-class PorcupineDemo(Thread):
+class ShomeAssistant(Thread):
     """
     Demo class for wake word detection (aka Porcupine) library. It creates an input audio stream from a microphone,
     monitors it, and upon detecting the specified wake word(s) prints the detection time and index of wake word on
@@ -61,7 +47,7 @@ class PorcupineDemo(Thread):
         :param output_path: If provided recorded audio will be stored in this location at the end of the run.
         """
 
-        super(PorcupineDemo, self).__init__()
+        super(ShomeAssistant, self).__init__()
 
         self._library_path = library_path
         self._model_file_path = model_file_path
@@ -79,6 +65,16 @@ class PorcupineDemo(Thread):
         stream for occurrences of the wake word(s). It prints the time of detection for each occurrence and index of
         wake word.
         """
+
+        session_client = dialogflow.SessionsClient()
+        audio_encoding = dialogflow.enums.AudioEncoding.AUDIO_ENCODING_LINEAR_16
+        sample_rate_hertz = 16000
+        language_code = 'ru-RU'
+        session_id = '1'
+        project_id = '***REMOVED***'
+
+        session_path = session_client.session_path(project_id, session_id)
+        print('Session path: {}\n'.format(session_path))
 
         num_keywords = len(self._keyword_file_paths)
 
@@ -226,12 +222,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.show_audio_devices_info:
-        PorcupineDemo.show_audio_devices_info()
+        ShomeAssistant.show_audio_devices_info()
     else:
         if not args.keyword_file_paths:
             raise ValueError('keyword file paths are missing')
 
-        PorcupineDemo(
+        ShomeAssistant(
             library_path=args.library_path if args.library_path is not None else _default_library_path(),
             model_file_path=args.model_file_path,
             keyword_file_paths=[x.strip() for x in args.keyword_file_paths.split(',')],

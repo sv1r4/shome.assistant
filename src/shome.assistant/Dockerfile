@@ -8,9 +8,10 @@ RUN apt-get update && apt-get install -y curl \
 WORKDIR /app
 RUN pip3 install pyaudio \
   soundfile \
-  numpy
+  numpy \
+  dialogflow
 
 FROM base as final
-ENV GOOGLE_APPLICATION_CREDENTIALS=/secrets/df_key.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
 COPY . .
 CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn
