@@ -27,6 +27,8 @@ build:images:
     - docker:dind    
   script:    
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com    
+    - mkdir ./secrets 
+    - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
     - docker build -t $TAG ./src/shome.assistant
     - docker push $TAG
 

@@ -11,5 +11,6 @@ RUN pip3 install pyaudio \
   numpy
 
 FROM base as final
+ENV GOOGLE_APPLICATION_CREDENTIALS=/secrets/df_key.json
 COPY . .
 CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn
