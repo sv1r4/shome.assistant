@@ -167,7 +167,7 @@ function reinitDetectIntentTimeout(ms, callback){
         } else {
           console.log(`Detected intent:`);
           
-          logQueryResult(sessidetectDialogIntentonClient, data.queryResult);
+          logQueryResult(sessionClient, data.queryResult);
 
         
           if(data.outputAudio){
