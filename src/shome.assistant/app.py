@@ -31,7 +31,7 @@ class ShomeAssistant(Thread):
             library_path,
             model_file_path,
             keyword_file_paths,
-            sensitivity=0.5,
+            sensitivity=0.6,
             input_device_index=None,
             output_path=None):
 
@@ -59,12 +59,26 @@ class ShomeAssistant(Thread):
         if self._output_path is not None:
             self._recorded_frames = []
 
-    def run(self):
-        """
-        Creates an input audio stream, initializes wake word detection (Porcupine) object, and monitors the audio
-        stream for occurrences of the wake word(s). It prints the time of detection for each occurrence and index of
-        wake word.
-        """
+    _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
+
+
+    _porcupine = None
+    _pa = None
+    _audio_stream = None
+    _isHotwordDetect = False
+    _isIntentDtect = False
+
+    def stopDetectHotword(self):
+        print("stop hotword detect")
+        self._isHotwordDetect = False
+        if self._audio_stream is not None:
+            # self._audio_stream.stop_stream()
+            self._audio_stream.close()
+            self.runDetectIntent()
+    
+    def runDetectIntent(self):
+        print("run detect intent")
+        self._isIntentDetect = True
 
         session_client = dialogflow.SessionsClient()
         audio_encoding = dialogflow.enums.AudioEncoding.AUDIO_ENCODING_LINEAR_16
@@ -76,45 +90,56 @@ class ShomeAssistant(Thread):
         session_path = session_client.session_path(project_id, session_id)
         print('Session path: {}\n'.format(session_path))
 
+        while True:
+            if not self._isIntentDetect:
+                break
+            time.sleep(0.1)
+
+
+
+    def runDetectHotword(self):
+        print("run detect hotword")
+        self._isHotwordDetect = True
         num_keywords = len(self._keyword_file_paths)
 
         keyword_names =\
             [os.path.basename(x).strip('.ppn').strip('_compressed').split('_')[0] for x in self._keyword_file_paths]
 
         def _audio_callback(in_data, frame_count, time_info, status):
-            if frame_count >= porcupine.frame_length:
-                pcm = struct.unpack_from("h" * porcupine.frame_length, in_data)
-                result = porcupine.process(pcm)
+            if frame_count >= self._porcupine.frame_length:
+                pcm = struct.unpack_from("h" * self._porcupine.frame_length, in_data)
+                result = self._porcupine.process(pcm)
                 if num_keywords == 1 and result:
                     print('[%s] detected keyword' % str(datetime.now()))
+                    self.stopDetectHotword()
+                    return None, pyaudio.paAbort
                     # add your own code execution here ... it will not block the recognition
                 elif num_keywords > 1 and result >= 0:
                     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
                     # or add it here if you use multiple keywords
+                    return None, pyaudio.paAbort
 
                 if self._output_path is not None:
                     self._recorded_frames.append(pcm)
             
             return None, pyaudio.paContinue
 
-        porcupine = None
-        pa = None
-        audio_stream = None
+        
         sample_rate = None
         try:
-            porcupine = Porcupine(
+            self._porcupine = Porcupine(
                 library_path=self._library_path,
                 model_file_path=self._model_file_path,
                 keyword_file_paths=self._keyword_file_paths,
                 sensitivities=[self._sensitivity] * num_keywords)
 
-            pa = pyaudio.PyAudio()
-            sample_rate = porcupine.sample_rate
+            self._pa = pyaudio.PyAudio()
+            sample_rate = self._porcupine.sample_rate
             num_channels = 1
             audio_format = pyaudio.paInt16
-            frame_length = porcupine.frame_length
+            frame_length = self._porcupine.frame_length
             
-            audio_stream = pa.open(
+            self._audio_stream = self._pa.open(
                 rate=sample_rate,
                 channels=num_channels,
                 format=audio_format,
@@ -123,7 +148,7 @@ class ShomeAssistant(Thread):
                 input_device_index=self._input_device_index,
                 stream_callback=_audio_callback)
 
-            audio_stream.start_stream()
+            self._audio_stream.start_stream()
 
             print("Started porcupine with following settings:")
             if self._input_device_index:
@@ -138,27 +163,31 @@ class ShomeAssistant(Thread):
             print("Waiting for keywords ...\n")
 
             while True:
+                if not self._isHotwordDetect:
+                    break
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
             print('stopping ...')
         finally:
-            if audio_stream is not None:
-                audio_stream.stop_stream()
-                audio_stream.close()
+            if self._audio_stream is not None:
+                self._audio_stream.stop_stream()
+                self._audio_stream.close()
 
-            if pa is not None:
-                pa.terminate()
+            if self._pa is not None:
+                self._pa.terminate()
 
             # delete Porcupine last to avoid segfault in callback.
-            if porcupine is not None:
-                porcupine.delete()
+            if self._porcupine is not None:
+                self._porcupine.delete()
 
             if self._output_path is not None and sample_rate is not None and len(self._recorded_frames) > 0:
                 recorded_audio = np.concatenate(self._recorded_frames, axis=0).astype(np.int16)
                 soundfile.write(self._output_path, recorded_audio, samplerate=sample_rate, subtype='PCM_16')
+    
 
-    _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
+    def run(self):
+        self.runDetectHotword()
 
     @classmethod
     def show_audio_devices_info(cls):
