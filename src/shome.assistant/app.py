@@ -27,7 +27,7 @@ import numpy as np
 import pyaudio
 import soundfile
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../binding/python'))
+sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
 
 from porcupine import Porcupine
 
@@ -182,17 +182,17 @@ def _default_library_path():
     machine = platform.machine()
 
     if system == 'Darwin':
-        return os.path.join(os.path.dirname(__file__), '../../lib/mac/%s/libpv_porcupine.dylib' % machine)
+        return os.path.join(os.path.dirname(__file__), './lib/mac/%s/libpv_porcupine.dylib' % machine)
     elif system == 'Linux':
         if machine == 'x86_64' or machine == 'i386':
-            return os.path.join(os.path.dirname(__file__), '../../lib/linux/%s/libpv_porcupine.so' % machine)
+            return os.path.join(os.path.dirname(__file__), './lib/linux/%s/libpv_porcupine.so' % machine)
         else:
             raise Exception('cannot autodetect the binary type. Please enter the path to the shared object using --library_path command line argument.')
     elif system == 'Windows':
         if platform.architecture()[0] == '32bit':
-            return os.path.join(os.path.dirname(__file__), '..\\..\\lib\\windows\\i686\\libpv_porcupine.dll')
+            return os.path.join(os.path.dirname(__file__), '.\\lib\\windows\\i686\\libpv_porcupine.dll')
         else:
-            return os.path.join(os.path.dirname(__file__), '..\\..\\lib\\windows\\amd64\\libpv_porcupine.dll')
+            return os.path.join(os.path.dirname(__file__), '.\\lib\\windows\\amd64\\libpv_porcupine.dll')
     raise NotImplementedError('Porcupine is not supported on %s/%s yet!' % (system, machine))
 
 
@@ -210,7 +210,7 @@ if __name__ == '__main__':
         '--model_file_path',
         help='absolute path to model parameter file',
         type=str,
-        default=os.path.join(os.path.dirname(__file__), '../../lib/common/porcupine_params.pv'))
+        default=os.path.join(os.path.dirname(__file__), './lib/common/porcupine_params.pv'))
 
     parser.add_argument('--sensitivity', help='detection sensitivity [0, 1]', default=0.5)
     parser.add_argument('--input_audio_device_index', help='index of input audio device', type=int, default=None)
