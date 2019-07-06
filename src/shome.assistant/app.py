@@ -107,7 +107,7 @@ class ShomeAssistant(Thread):
         print('Session path: {}\n'.format(session_path))
       
         def _audio_callback_intent(in_data, frame_count, time_info, status):
-            print("audio callback frame_count={0} status={1}".format(frame_count, status))
+            #print("audio callback frame_count={0} status={1}".format(frame_count, status))
             self._buff.put(in_data)            
             return None, pyaudio.paContinue
 
@@ -166,9 +166,8 @@ class ShomeAssistant(Thread):
                         if not self._isIntentDetect:
                             print("done intent")
                             return
-                        print("stream chunk")
-                        yield dialogflow.types.StreamingDetectIntentRequest(
-                            input_audio=chunk)  
+                       # print("stream chunk")
+                        yield dialogflow.types.StreamingDetectIntentRequest(input_audio=chunk)  
                     #except queue.Empty:
                       #  print("queue empty")
                       #  break
