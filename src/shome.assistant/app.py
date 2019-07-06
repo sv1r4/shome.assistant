@@ -154,7 +154,7 @@ class ShomeAssistant(Thread):
         self._is_playing = False 
 
 
-    def runDetectIntent(self):
+    def runDetectIntent(self, session_id):
         print("run detect intent")
         self._isIntentDetect = True
 
@@ -162,8 +162,7 @@ class ShomeAssistant(Thread):
         audio_encoding = dialogflow.enums.AudioEncoding.AUDIO_ENCODING_LINEAR_16
         sample_rate_hertz = 16000
         language_code = 'ru-RU'
-        self._session_counter+=1
-        session_id = '{}'.format(self._session_counter)
+        session_id = '{}'.format(session_id)
         print("session #{}".format(session_id))
         endpointing_file = "./resources/sounds/med_ui_endpointing.wav"
 
@@ -301,8 +300,9 @@ class ShomeAssistant(Thread):
                 if num_keywords == 1 and result:
                     print('[%s] detected keyword' % str(datetime.now()))    
                     self.playSound(self._wake_sound_file, False)   
-                    self.stopDetectHotword()
-                    self.runDetectIntent()
+                    self.stopDetectHotword()                    
+                    self._session_counter+=1
+                    self.runDetectIntent(self._session_counter)
                # elif num_keywords > 1 and result >= 0:
                #     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
                     # or add it here if you use multiple keywords
@@ -375,7 +375,7 @@ class ShomeAssistant(Thread):
 
     def run(self):
         self.runDetectHotword()
-       # self.runDetectIntent()
+       # self.runDetectIntent(self._session_counter)
  
 
 def _default_library_path():
