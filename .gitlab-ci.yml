@@ -26,8 +26,11 @@ build:images:
   services:
     - docker:dind    
   script:    
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com    
-    - docker build -t $TAG ./src/shome.assistant
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com  
+    - cd ./src/shome.assistant  
+    - mkdir ./secrets 
+    - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
+    - docker build -t $TAG .
     - docker push $TAG
 
 # test:    

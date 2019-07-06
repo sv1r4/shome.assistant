@@ -1,36 +1,21 @@
 FROM ubuntu:18.04 AS base
-RUN apt-get update && apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
-RUN apt-get update && apt-get install -y \
-  nodejs \
-  sox \
-  libatlas-base-dev \
-  mplayer
+RUN apt-get update && apt-get install -y curl \
+   libasound2-dev \
+   libsndfile-dev \
+   portaudio19-dev \
+   python3 \
+   python3-pip
+   
 WORKDIR /app
-
-
-FROM base as node-deps
-RUN apt-get update && apt-get install -y git \
-   libmagic-dev \
-   libatlas-base-dev \
-   make \
-   g++ \
-   node-gyp \
-   node-pre-gyp
-RUN git clone https://github.com/Kitt-AI/snowboy.git
-WORKDIR /app/snowboy
-RUN npm install
-RUN ./node_modules/node-pre-gyp/bin/node-pre-gyp clean configure build
-RUN npm run prepublish 
-
-WORKDIR /app
-COPY package.json .
-RUN npm install --only=production 
-
-
+RUN pip3 install pyaudio \
+  soundfile \
+  numpy \
+  dialogflow \
+  simpleaudio
 
 FROM base as final
-COPY --from=node-deps /app/node_modules ./node_modules
-COPY --from=node-deps /app/snowboy ./node_modules/snowboy
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
+ENV LANG=C.UTF-8
+ENV SENSIVITY=1
 COPY . .
-CMD node app.js
+CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn --sensitivity $SENSIVITY --project_id $PROJECT_ID
