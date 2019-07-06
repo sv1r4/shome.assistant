@@ -14,7 +14,6 @@ from threading import Thread
 
 from six.moves import queue
 
-from pydub.playback import play
 import simpleaudio as sa
 import wave
 #from Tkinter import *
@@ -44,6 +43,7 @@ class ShomeAssistant(Thread):
             library_path,
             model_file_path,
             keyword_file_paths,
+            project_id,
             sensitivity=0.6,
             input_device_index=None):
 
@@ -55,7 +55,7 @@ class ShomeAssistant(Thread):
         self._sensitivity = float(sensitivity)
         self._input_device_index = input_device_index
         self._wake_sound_file = "./resources/sounds/med_ui_wakesound_touch.wav"
-     
+        self._project_id = project_id
      
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
@@ -164,10 +164,9 @@ class ShomeAssistant(Thread):
         self._session_counter+=1
         session_id = '{}'.format(self._session_counter)
         print("session #{}".format(session_id))
-        project_id = '***REMOVED***'        
         endpointing_file = "./resources/sounds/med_ui_endpointing.wav"
 
-        session_path = session_client.session_path(project_id, session_id)
+        session_path = session_client.session_path(self._project_id, session_id)
         print('Session path: {}\n'.format(session_path))
       
         def _audio_callback_intent(in_data, frame_count, time_info, status):
@@ -376,19 +375,7 @@ class ShomeAssistant(Thread):
     def run(self):
         self.runDetectHotword()
        # self.runDetectIntent()
-
-    @classmethod
-    def show_audio_devices_info(cls):
-        """ Provides information regarding different audio devices available. """
-
-        pa = pyaudio.PyAudio()
-
-        for i in range(pa.get_device_count()):
-            info = pa.get_device_info_by_index(i)
-            print(', '.join("'%s': '%s'" % (k, str(info[k])) for k in cls._AUDIO_DEVICE_INFO_KEYS))
-
-        pa.terminate()
-
+ 
 
 def _default_library_path():
     system = platform.system()
@@ -412,7 +399,9 @@ def _default_library_path():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--keyword_file_paths', help='comma-separated absolute paths to keyword files', type=str)
+    parser.add_argument('--keyword_file_paths',
+        help='comma-separated absolute paths to keyword files',
+        type=str)
 
     parser.add_argument(
         '--library_path',
@@ -428,22 +417,20 @@ if __name__ == '__main__':
     parser.add_argument('--sensitivity', help='detection sensitivity [0, 1]', default=0.5)
     parser.add_argument('--input_audio_device_index', help='index of input audio device', type=int, default=None)
 
-  
-
-    parser.add_argument('--show_audio_devices_info', action='store_true')
+    parser.add_argument('--project_id', help="google dialogflow project id", type=str)
 
     args = parser.parse_args()
 
-    if args.show_audio_devices_info:
-        ShomeAssistant.show_audio_devices_info()
-    else:
-        if not args.keyword_file_paths:
-            raise ValueError('keyword file paths are missing')
+    if not args.keyword_file_paths:
+        raise ValueError('keyword file paths are missing')
+    if not args.project_id:
+        raise ValueError('google project id is missing')
 
-        ShomeAssistant(
-            library_path=args.library_path if args.library_path is not None else _default_library_path(),
-            model_file_path=args.model_file_path,
-            keyword_file_paths=[x.strip() for x in args.keyword_file_paths.split(',')],
-            sensitivity=args.sensitivity,
-            input_device_index=args.input_audio_device_index
-        ).run()
+    ShomeAssistant(
+        library_path=args.library_path if args.library_path is not None else _default_library_path(),
+        model_file_path=args.model_file_path,
+        keyword_file_paths=[x.strip() for x in args.keyword_file_paths.split(',')],
+        sensitivity=args.sensitivity,
+        input_device_index=args.input_audio_device_index,
+        project_id=args.project_id
+    ).run()
