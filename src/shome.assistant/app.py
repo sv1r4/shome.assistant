@@ -95,8 +95,6 @@ class ShomeAssistant(Thread):
                 self._pa.terminate()
         except:
             print("stream error")
-        finally:
-            self.runDetectHotword()
 
     def playSound(self, file, isSync = True):
         if self._is_playing:
@@ -231,6 +229,7 @@ class ShomeAssistant(Thread):
             responses = session_client.streaming_detect_intent(requests)
 
             print('=' * 20)
+            isEndConversation = True
             for response in responses:
                 transcript = response.recognition_result.transcript
                
@@ -251,8 +250,16 @@ class ShomeAssistant(Thread):
                         out.write(response.output_audio)                    
                     self.playSoundResponse(wav_file)
                     #self.playSound(wav_file)
-
+                
             self.stopDetectIntent()    
+            if isEndConversation:
+                print('end conversation')
+                self.runDetectHotword()
+            else:      
+                self.playSound(self._wake_sound_file)          
+                print('conversation continue')
+                self.runDetectIntent(self._session_counter)
+
 
            
         except KeyboardInterrupt:
