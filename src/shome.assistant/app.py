@@ -14,9 +14,9 @@ from threading import Thread
 
 from six.moves import queue
 
-from pydub import AudioSegment
 from pydub.playback import play
-#from playsound import playsound
+import simpleaudio as sa
+import wave
 #from Tkinter import *
 #import tkSnack
 
@@ -78,13 +78,11 @@ class ShomeAssistant(Thread):
             if self._audio_stream is not None:
               # self._audio_stream.stop_stream()
                self._audio_stream.close()
-            if self._pa is not None:
-                self._pa.terminate()
+            # if self._pa is not None:
+            #     self._pa.terminate()
         
         except:
             print("stream error")
-        finally:
-            self.runDetectIntent()
     
     def stopDetectIntent(self):
         print("stop intent detect")
@@ -93,21 +91,65 @@ class ShomeAssistant(Thread):
             if self._audio_stream is not None:
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()                                        
-            if self._pa is not None:
-                self._pa.terminate()
+            # if self._pa is not None:
+            #     self._pa.terminate()
         except:
             print("stream error")
         finally:
             self.runDetectHotword()
 
     def playSound(self, file, isSync = True):
-        self._is_playing = True
-        sound = AudioSegment.from_wav(file) 
-        play(sound)
-        #playsound(file, isSync)
-        #snd = self._tkSnack.Sound()
-        #snd.read(file)
-        #snd.play(blocking=1)
+        if self._is_playing:
+            print("already playing")
+            return
+        try:
+            self._is_playing = True
+            wave_obj = sa.WaveObject.from_wave_file(file)
+            play_obj = wave_obj.play()
+            if isSync:
+                play_obj.wait_done()
+        
+        except:
+            print("error playback")
+        self._is_playing = False
+
+    def playSoundResponse(self, filename):
+        if self._is_playing:
+            print("already playing")
+            return
+        try:
+            self._is_playing = True
+
+            # Set chunk size of 1024 samples per data frame
+            chunk = 1024  
+
+            # Open the sound file 
+            wf = wave.open(filename, 'rb')
+
+            # Create an interface to PortAudio
+            p = pyaudio.PyAudio()
+
+            # Open a .Stream object to write the WAV file to
+            # 'output = True' indicates that the sound will be played rather than recorded
+            stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
+                            channels = wf.getnchannels(),
+                            rate = wf.getframerate(),
+                            output = True)
+
+            # Read data in chunks
+            data = wf.readframes(chunk)
+
+            # Play the sound by writing the audio data to the stream
+            while len(data) > 0:
+                stream.write(data)
+                data = wf.readframes(chunk)
+
+            # Close and terminate the stream
+            stream.close()
+            p.terminate()
+        
+        except error:
+            print(error)
         self._is_playing = False 
 
 
@@ -129,7 +171,7 @@ class ShomeAssistant(Thread):
         print('Session path: {}\n'.format(session_path))
       
         def _audio_callback_intent(in_data, frame_count, time_info, status):
-            #print("audio callback frame_count={0} status={1}".format(frame_count, status))
+            #print("audio callback frame_count={0} status={1}".format(frame_count, status))            
             if not self._is_playing:
                 self._buff.put(in_data)            
             return None, pyaudio.paContinue
@@ -170,6 +212,7 @@ class ShomeAssistant(Thread):
                     session=session_path, query_input=query_input,
                     single_utterance=True,
                     output_audio_config=output_audio_config)
+                
 
                 while True:
                     chunk = self._buff.get()
@@ -184,6 +227,8 @@ class ShomeAssistant(Thread):
 
                          
             requests = request_generator(audio_config)
+            
+            
             responses = session_client.streaming_detect_intent(requests)
 
             print('=' * 20)
@@ -193,20 +238,20 @@ class ShomeAssistant(Thread):
                 print("intermediate transcript {0}".format(transcript))
                # print('Stream response reognition result {0}'.format(response.recognition_result))
                 if response.recognition_result.is_final:
-                    #self.playSound(endpointing_file, False)
+                    self.playSound(endpointing_file, False)
                     self._isIntentDetect = False
                 intent = response.query_result.intent.display_name 
                 if intent is not None and intent != "":
                     print("intent {0}".format(intent    ))
                 if response.output_audio is not None and len(response.output_audio) > 0:
                     print("got audio response")
+                    #self.playSoundResponse(response.output_audio)
+                    
                     wav_file = 'output.wav'
                     with open(wav_file, 'wb') as out:
-                        out.write(response.output_audio)
-                        print('Audio content written to file {}'.format(wav_file))
-                        print('[%s] playing response' % str(datetime.now()))
-                        self.playSound(wav_file)
-                        print('[%s] playing response done' % str(datetime.now()))
+                        out.write(response.output_audio)                    
+                    self.playSoundResponse(wav_file)
+                    #self.playSound(wav_file)
 
             self.stopDetectIntent()    
 
@@ -218,8 +263,8 @@ class ShomeAssistant(Thread):
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()
 
-            if self._pa is not None:
-                self._pa.terminate()
+            # if self._pa is not None:
+            #     self._pa.terminate()
 
             # delete Porcupine last to avoid segfault in callback.
             if self._porcupine is not None:
@@ -254,9 +299,10 @@ class ShomeAssistant(Thread):
                 pcm = struct.unpack_from("h" * self._porcupine.frame_length, in_data)
                 result = self._porcupine.process(pcm)
                 if num_keywords == 1 and result:
-                    print('[%s] detected keyword' % str(datetime.now()))
-                  #  self.playSound(self._wake_sound_file)
+                    print('[%s] detected keyword' % str(datetime.now()))    
+                    self.playSound(self._wake_sound_file, False)   
                     self.stopDetectHotword()
+                    self.runDetectIntent()
                # elif num_keywords > 1 and result >= 0:
                #     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
                     # or add it here if you use multiple keywords
@@ -305,8 +351,10 @@ class ShomeAssistant(Thread):
             print("Waiting for keywords ...\n")
 
             while True:
-                #if not self._isHotwordDetect:
-                #    break
+                #print("loop")
+                #if not self._isHotwordDetect and not self._isIntentDetect:                                        
+                   # self.playSound(self._wake_sound_file)
+                    
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
@@ -316,8 +364,8 @@ class ShomeAssistant(Thread):
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()
 
-            if self._pa is not None:
-                self._pa.terminate()
+            # if self._pa is not None:
+            #     self._pa.terminate()
 
             # delete Porcupine last to avoid segfault in callback.
             if self._porcupine is not None:
@@ -327,7 +375,7 @@ class ShomeAssistant(Thread):
 
     def run(self):
         self.runDetectHotword()
-        #self.runDetectIntent()
+       # self.runDetectIntent()
 
     @classmethod
     def show_audio_devices_info(cls):
