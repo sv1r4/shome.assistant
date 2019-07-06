@@ -147,10 +147,15 @@ class ShomeAssistant(Thread):
 
             def request_generator(audio_config):
                 query_input = dialogflow.types.QueryInput(audio_config=audio_config)
+                output_audio_config = dialogflow.types.OutputAudioConfig(
+                    audio_encoding=dialogflow.enums.OutputAudioEncoding.OUTPUT_AUDIO_ENCODING_LINEAR_16)
+
 
                 # The first request contains the configuration.
                 yield dialogflow.types.StreamingDetectIntentRequest(
-                    session=session_path, query_input=query_input, single_utterance=True)
+                    session=session_path, query_input=query_input,
+                    single_utterance=True,
+                    output_audio_config=output_audio_config)
 
                 while True:
                     #try:
@@ -174,7 +179,10 @@ class ShomeAssistant(Thread):
 
             print('=' * 20)
             for response in responses:
-                print('Stream response {0}'.format(response))
+                transcript = response.recognition_result.transcript
+               
+                print(transcript)
+               # print('Stream response reognition result {0}'.format(response.recognition_result))
                 if response.recognition_result.is_final:
                     self._isIntentDetect = False
 
