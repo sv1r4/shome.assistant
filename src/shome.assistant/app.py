@@ -68,10 +68,10 @@ class ShomeAssistant(Thread):
         self._isHotwordDetect = False
         try:
             if self._audio_stream is not None:
-               # self._audio_stream.stop_stream()
+               self._audio_stream.stop_stream()
                self._audio_stream.close()
-            #if self._pa is not None:
-            #    self._pa.terminate()
+            if self._pa is not None:
+                self._pa.terminate()
         
         except:
             print("stream error")
@@ -115,7 +115,7 @@ class ShomeAssistant(Thread):
         try:
             num_channels = 1
             audio_format = pyaudio.paInt16
-            frame_length = 4096 #self._porcupine.frame_length
+            frame_length = 4096
 
             audio_config = dialogflow.types.InputAudioConfig(
             audio_encoding=audio_encoding, language_code=language_code,
@@ -225,11 +225,13 @@ class ShomeAssistant(Thread):
                 if num_keywords == 1 and result:
                     print('[%s] detected keyword' % str(datetime.now()))
                     self.stopDetectHotword()
+                    #self.runDetectHotword()
                     # add your own code execution here ... it will not block the recognition
                 elif num_keywords > 1 and result >= 0:
                     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
                     # or add it here if you use multiple keywords
                     self.stopDetectHotword()
+                   # self.runDetectHotword()
 
                 
             return None, pyaudio.paContinue
@@ -273,8 +275,8 @@ class ShomeAssistant(Thread):
             print("Waiting for keywords ...\n")
 
             while True:
-                if not self._isHotwordDetect:
-                    break
+                #if not self._isHotwordDetect:
+                #    break
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
@@ -294,8 +296,8 @@ class ShomeAssistant(Thread):
            
 
     def run(self):
-        #self.runDetectHotword()
-        self.runDetectIntent()
+        self.runDetectHotword()
+        #self.runDetectIntent()
 
     @classmethod
     def show_audio_devices_info(cls):
