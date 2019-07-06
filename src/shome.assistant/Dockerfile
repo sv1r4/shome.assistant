@@ -9,10 +9,12 @@ WORKDIR /app
 RUN pip3 install pyaudio \
   soundfile \
   numpy \
-  dialogflow
+  dialogflow \
+  pydub
 
 FROM base as final
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
 ENV LANG=C.UTF-8
+ENV SENSIVITY=1
 COPY . .
-CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn --sensitivity 0.6
+CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn --sensitivity $SENSIVITY

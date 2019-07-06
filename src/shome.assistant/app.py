@@ -14,6 +14,9 @@ from threading import Thread
 
 from six.moves import queue
 
+from pydub import AudioSegment
+from pydub.playback import play
+
 import numpy as np
 import pyaudio
 import soundfile
@@ -61,6 +64,8 @@ class ShomeAssistant(Thread):
     _isHotwordDetect = False
     _isIntentDetect = False
     _buff = queue.Queue()
+    _session_counter = 0
+    _is_playing = False
 
 
     def stopDetectHotword(self):
@@ -100,7 +105,9 @@ class ShomeAssistant(Thread):
         audio_encoding = dialogflow.enums.AudioEncoding.AUDIO_ENCODING_LINEAR_16
         sample_rate_hertz = 16000
         language_code = 'ru-RU'
-        session_id = '1'
+        self._session_counter+=1
+        session_id = '{}'.format(self._session_counter)
+        print("session #{}".format(session_id))
         project_id = '***REMOVED***'
 
         session_path = session_client.session_path(project_id, session_id)
@@ -108,7 +115,8 @@ class ShomeAssistant(Thread):
       
         def _audio_callback_intent(in_data, frame_count, time_info, status):
             #print("audio callback frame_count={0} status={1}".format(frame_count, status))
-            self._buff.put(in_data)            
+            if not self._is_playing:
+                self._buff.put(in_data)            
             return None, pyaudio.paContinue
 
             
@@ -180,10 +188,25 @@ class ShomeAssistant(Thread):
             for response in responses:
                 transcript = response.recognition_result.transcript
                
-                print(transcript)
+                print("intermediate transcript {0}".format(transcript))
                # print('Stream response reognition result {0}'.format(response.recognition_result))
                 if response.recognition_result.is_final:
                     self._isIntentDetect = False
+                intent = response.query_result.intent.display_name 
+                if intent is not None and intent != "":
+                    print("intent {0}".format(intent    ))
+                if response.output_audio is not None and len(response.output_audio) > 0:
+                    print("got audio response")
+                    wav_file = 'output.wav'
+                    with open(wav_file, 'wb') as out:
+                        out.write(response.output_audio)
+                        print('Audio content written to file {}'.format(wav_file))
+                        sound = AudioSegment.from_wav(wav_file) 
+                        self._is_playing = True  
+                        print('[%s] playing response' % str(datetime.now()))
+                        play(sound)                        
+                        print('[%s] playing response done' % str(datetime.now()))
+                        self._is_playing = False  
 
             self.stopDetectIntent()    
 
