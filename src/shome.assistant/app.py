@@ -78,8 +78,8 @@ class ShomeAssistant(Thread):
             if self._audio_stream is not None:
               # self._audio_stream.stop_stream()
                self._audio_stream.close()
-            # if self._pa is not None:
-            #     self._pa.terminate()
+            if self._pa is not None:
+                self._pa.terminate()
         
         except:
             print("stream error")
@@ -91,8 +91,8 @@ class ShomeAssistant(Thread):
             if self._audio_stream is not None:
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()                                        
-            # if self._pa is not None:
-            #     self._pa.terminate()
+            if self._pa is not None:
+                self._pa.terminate()
         except:
             print("stream error")
         finally:
@@ -145,6 +145,7 @@ class ShomeAssistant(Thread):
                 data = wf.readframes(chunk)
 
             # Close and terminate the stream
+            stream.stop_stream()
             stream.close()
             p.terminate()
         
@@ -363,8 +364,8 @@ class ShomeAssistant(Thread):
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()
 
-            # if self._pa is not None:
-            #     self._pa.terminate()
+            if self._pa is not None:
+                self._pa.terminate()
 
             # delete Porcupine last to avoid segfault in callback.
             if self._porcupine is not None:
