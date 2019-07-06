@@ -5,16 +5,17 @@ RUN apt-get update && apt-get install -y curl \
    portaudio19-dev \
    python3 \
    python3-pip
+   
 WORKDIR /app
 RUN pip3 install pyaudio \
   soundfile \
   numpy \
   dialogflow \
-  pydub
+  pydub 
 
 FROM base as final
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
 ENV LANG=C.UTF-8
-ENV SENSIVITY=1
+ENV SENSIVITY=0.8
 COPY . .
 CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn --sensitivity $SENSIVITY

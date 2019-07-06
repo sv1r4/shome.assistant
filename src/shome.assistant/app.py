@@ -16,6 +16,9 @@ from six.moves import queue
 
 from pydub import AudioSegment
 from pydub.playback import play
+#from playsound import playsound
+#from Tkinter import *
+#import tkSnack
 
 import numpy as np
 import pyaudio
@@ -51,10 +54,9 @@ class ShomeAssistant(Thread):
         self._keyword_file_paths = keyword_file_paths
         self._sensitivity = float(sensitivity)
         self._input_device_index = input_device_index
-            
-        
-            
-
+        self._wake_sound_file = "./resources/sounds/med_ui_wakesound_touch.wav"
+     
+     
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
 #todo init in constructor
@@ -65,15 +67,16 @@ class ShomeAssistant(Thread):
     _isIntentDetect = False
     _buff = queue.Queue()
     _session_counter = 0
+    _hotword_counter = 0
     _is_playing = False
 
 
     def stopDetectHotword(self):
         print("stop hotword detect")
         self._isHotwordDetect = False
-        try:
+        try:            
             if self._audio_stream is not None:
-               self._audio_stream.stop_stream()
+              # self._audio_stream.stop_stream()
                self._audio_stream.close()
             if self._pa is not None:
                 self._pa.terminate()
@@ -96,7 +99,18 @@ class ShomeAssistant(Thread):
             print("stream error")
         finally:
             self.runDetectHotword()
-    
+
+    def playSound(self, file, isSync = True):
+        self._is_playing = True
+        sound = AudioSegment.from_wav(file) 
+        play(sound)
+        #playsound(file, isSync)
+        #snd = self._tkSnack.Sound()
+        #snd.read(file)
+        #snd.play(blocking=1)
+        self._is_playing = False 
+
+
     def runDetectIntent(self):
         print("run detect intent")
         self._isIntentDetect = True
@@ -108,7 +122,8 @@ class ShomeAssistant(Thread):
         self._session_counter+=1
         session_id = '{}'.format(self._session_counter)
         print("session #{}".format(session_id))
-        project_id = '***REMOVED***'
+        project_id = '***REMOVED***'        
+        endpointing_file = "./resources/sounds/med_ui_endpointing.wav"
 
         session_path = session_client.session_path(project_id, session_id)
         print('Session path: {}\n'.format(session_path))
@@ -142,15 +157,6 @@ class ShomeAssistant(Thread):
 
             self._audio_stream.start_stream()
 
-            print("Started detect intent with following settings:")
-            if self._input_device_index:
-                print("Input device: %d (check with --show_audio_devices_info)" % self._input_device_index)
-            else:
-                print("Input device: default (check with --show_audio_devices_info)")
-            print("Sample-rate: %d" % sample_rate_hertz)
-            print("Channels: %d" % num_channels)
-            print("Format: %d" % audio_format)
-            print("Frame-length: %d" % frame_length)
             print("Waiting for command ...\n")
 
             def request_generator(audio_config):
@@ -166,19 +172,15 @@ class ShomeAssistant(Thread):
                     output_audio_config=output_audio_config)
 
                 while True:
-                    #try:
-                        chunk = self._buff.get()
-                        if chunk is None:
-                            print("chunk none")
-                            return
-                        if not self._isIntentDetect:
-                            print("done intent")
-                            return
-                       # print("stream chunk")
-                        yield dialogflow.types.StreamingDetectIntentRequest(input_audio=chunk)  
-                    #except queue.Empty:
-                      #  print("queue empty")
-                      #  break
+                    chunk = self._buff.get()
+                    if chunk is None:
+                        print("chunk none")
+                        return
+                    if not self._isIntentDetect:
+                        print("done intent")
+                        return
+                    yield dialogflow.types.StreamingDetectIntentRequest(input_audio=chunk)  
+                
 
                          
             requests = request_generator(audio_config)
@@ -191,6 +193,7 @@ class ShomeAssistant(Thread):
                 print("intermediate transcript {0}".format(transcript))
                # print('Stream response reognition result {0}'.format(response.recognition_result))
                 if response.recognition_result.is_final:
+                    #self.playSound(endpointing_file, False)
                     self._isIntentDetect = False
                 intent = response.query_result.intent.display_name 
                 if intent is not None and intent != "":
@@ -201,12 +204,9 @@ class ShomeAssistant(Thread):
                     with open(wav_file, 'wb') as out:
                         out.write(response.output_audio)
                         print('Audio content written to file {}'.format(wav_file))
-                        sound = AudioSegment.from_wav(wav_file) 
-                        self._is_playing = True  
                         print('[%s] playing response' % str(datetime.now()))
-                        play(sound)                        
+                        self.playSound(wav_file)
                         print('[%s] playing response done' % str(datetime.now()))
-                        self._is_playing = False  
 
             self.stopDetectIntent()    
 
@@ -241,7 +241,8 @@ class ShomeAssistant(Thread):
 
 
     def runDetectHotword(self):
-        print("run detect hotword")
+        self._hotword_counter += 1
+        print("run detect hotword #{}".format(self._hotword_counter))
         self._isHotwordDetect = True
         num_keywords = len(self._keyword_file_paths)
 
@@ -254,13 +255,12 @@ class ShomeAssistant(Thread):
                 result = self._porcupine.process(pcm)
                 if num_keywords == 1 and result:
                     print('[%s] detected keyword' % str(datetime.now()))
+                  #  self.playSound(self._wake_sound_file)
                     self.stopDetectHotword()
-                    #self.runDetectHotword()
-                    # add your own code execution here ... it will not block the recognition
-                elif num_keywords > 1 and result >= 0:
-                    print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
+               # elif num_keywords > 1 and result >= 0:
+               #     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
                     # or add it here if you use multiple keywords
-                    self.stopDetectHotword()
+               #     self.stopDetectHotword()
                    # self.runDetectHotword()
 
                 
@@ -274,7 +274,7 @@ class ShomeAssistant(Thread):
                 model_file_path=self._model_file_path,
                 keyword_file_paths=self._keyword_file_paths,
                 sensitivities=[self._sensitivity] * num_keywords)
-
+            print("purcipine sensivity {}".format(self._sensitivity))
             sample_rate = self._porcupine.sample_rate
             num_channels = 1
             audio_format = pyaudio.paInt16
@@ -292,15 +292,15 @@ class ShomeAssistant(Thread):
 
             self._audio_stream.start_stream()
 
-            print("Started porcupine with following settings:")
-            if self._input_device_index:
-                print("Input device: %d (check with --show_audio_devices_info)" % self._input_device_index)
-            else:
-                print("Input device: default (check with --show_audio_devices_info)")
-            print("Sample-rate: %d" % sample_rate)
-            print("Channels: %d" % num_channels)
-            print("Format: %d" % audio_format)
-            print("Frame-length: %d" % frame_length)
+            # print("Started porcupine with following settings:")
+            # if self._input_device_index:
+            #     print("Input device: %d (check with --show_audio_devices_info)" % self._input_device_index)
+            # else:
+            #     print("Input device: default (check with --show_audio_devices_info)")
+            # print("Sample-rate: %d" % sample_rate)
+            # print("Channels: %d" % num_channels)
+            # print("Format: %d" % audio_format)
+            # print("Frame-length: %d" % frame_length)
             print("Keyword file(s): %s" % self._keyword_file_paths)
             print("Waiting for keywords ...\n")
 
