@@ -17,5 +17,12 @@ FROM base as final
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
 ENV LANG=C.UTF-8
 ENV SENSIVITY=1
+ENV KEYWORD_FILE_PATHS=resources/keyword_files/linux/alexa_linux_compressed.ppn
+#ENV KEYWORD_FILE_PATHS=resources/keyword_files/linux/alexa_linux.ppn
+ENV MODEL_FILE_PATH=./lib/common/porcupine_compressed_params.pv
+#ENV MODEL_FILE_PATH=./lib/common/porcupine_params.pv
 COPY . .
-CMD python3 app.py --keyword_file_paths resources/keyword_files/linux/alexa_linux.ppn --sensitivity $SENSIVITY --project_id $PROJECT_ID
+CMD python3 app.py --keyword_file_paths $KEYWORD_FILE_PATHS \
+   --model_file_path $MODEL_FILE_PATH \
+   --sensitivity $SENSIVITY \
+   --project_id $PROJECT_ID
