@@ -119,9 +119,11 @@ class ShomeAssistant(Thread):
         try:
             self._is_playing = True
             args = ("play", filename)
+            #play in background
+            subprocess.Popen(args, stdout=subprocess.PIPE)
             #Or just:
             #args = "bin/bar -c somefile.xml -d text.txt -r aString -f anotherString".split()
-            popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+            #popen = subprocess.Popen(args, stdout=subprocess.PIPE)
             #popen.wait()
             #output = popen.stdout.read()
             #print output
