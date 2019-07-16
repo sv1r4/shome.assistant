@@ -14,6 +14,8 @@ RUN pip3 install pyaudio \
   simpleaudio
 
 FROM base as final
+RUN apt-get update && apt-get install -y curl \
+   sox
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
 ENV LANG=C.UTF-8
 ENV SENSIVITY=1
