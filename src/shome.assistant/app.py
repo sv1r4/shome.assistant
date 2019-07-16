@@ -7,6 +7,7 @@ import argparse
 import os
 import platform
 import struct
+import subprocess
 
 import time
 from datetime import datetime
@@ -112,6 +113,25 @@ class ShomeAssistant(Thread):
         self._is_playing = False
 
     def playSoundResponse(self, filename):
+        if self._is_playing:
+            print("already playing")
+            return
+        try:
+            self._is_playing = True
+            args = ("play", filename)
+            #Or just:
+            #args = "bin/bar -c somefile.xml -d text.txt -r aString -f anotherString".split()
+            popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+            #popen.wait()
+            #output = popen.stdout.read()
+            #print output
+          
+        
+        except error:
+            print(error)
+        self._is_playing = False 
+
+    def playSoundResponseBask(self, filename):
         if self._is_playing:
             print("already playing")
             return
