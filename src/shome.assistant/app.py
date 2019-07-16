@@ -147,8 +147,8 @@ class ShomeAssistant(Thread):
             stream.close()
             p.terminate()
         
-        except error:
-            print(error)
+        except:
+            print("play error")
         self._is_playing = False 
 
 
@@ -247,13 +247,14 @@ class ShomeAssistant(Thread):
                     
                     wav_file = 'output.wav'
                     with open(wav_file, 'wb') as out:
-                        out.write(response.output_audio)                    
+                        out.write(response.output_audio)  
+
                     self.playSoundResponse(wav_file)
-                    #self.playSound(wav_file)
                 
-            self.stopDetectIntent()    
+            self.stopDetectIntent()   
+           
             if isEndConversation:
-                print('end conversation')
+                print('end conversation')                
                 self.runDetectHotword()
             else:      
                 self.playSound(self._wake_sound_file)          
