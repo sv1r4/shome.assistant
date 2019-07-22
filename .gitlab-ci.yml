@@ -1,7 +1,7 @@
 stages: 
   - build
 #  - test
-#  - deploy
+  - deploy
 
 variables:  
   ASPNETCORE_ENVIRONMENT: Production  
