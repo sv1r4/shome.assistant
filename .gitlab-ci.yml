@@ -1,21 +1,18 @@
 stages: 
   - build
-#  - test
   - deploy
 
 variables:  
-  ASPNETCORE_ENVIRONMENT: Production  
   COMPOSE_HTTP_TIMEOUT: "1200"
   MAJOR_VERSION: 0
-  MINOR_VERSION: 0
-  STACK: shome-apps
+  MINOR_VERSION: 1
 
 before_script:  
-  #- export TAG=$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_IID-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`.$CI_PIPELINE_ID
-  - export TAG=$MAJOR_VERSION.$MINOR_VERSION-`echo $CI_COMMIT_REF_NAME | sed 's/\//_/g' | tr '[:upper:]' '[:lower:]'`-$CI_PIPELINE_ID
+  - export TAG=$MAJOR_VERSION.$MINOR_VERSION.$CI_PIPELINE_IID
   - echo $TAG
   - export TAG=registry.gitlab.com/sv1r4/shome.assistant:$TAG
   - echo $TAG
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com  
 
     
 build:images:
@@ -26,7 +23,6 @@ build:images:
   services:
     - docker:dind    
   script:    
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com  
     - cd ./src/shome.assistant  
     - mkdir ./secrets 
     - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
@@ -51,35 +47,3 @@ deploy:laptop-assitant:
   tags:
     - laptop-assistant
     - shome
-
-# if [[ $(docker ps -a -q -f name=s.assist) > 0 ]]; then docker rm -f $(docker ps -a -q -f name=s.assist) ; else echo docker s.assist not runnig ; fi
-# docker build -t shome.assitant . && docker rm -f $(docker ps -a -q -f name=s.assist) && docker run --privileged --restart always -ti -d -e PROJECT_ID='***REMOVED***' -e SENSIVITY=0.8 --name=s.assist shome.assitant    
-
-
-# test:    
-#   image: docker
-#   stage: test
-#   services:
-#     - docker:dind
-#   script:
-#     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com   
-#     - mkdir ./secrets 
-#     - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
-#     - echo $GOOGLE_APPLICATION_CREDENTIALS
-#     - docker run -v ./secrets:/secrets   -e 'GOOGLE_APPLICATION_CREDENTIALS=/secrets/df_key.json' $TAG
-
-
-# deploy:rpi-server:
-#   stage: deploy
-#   variables:
-#     IMAGE_PREFIX: registry.gitlab.com/sv1r4/shome.scenario/
-#     GIT_SUBMODULE_STRATEGY: none
-#   script:
-#     - echo "${IMAGE_PREFIX}<image>:${TAG}"
-#     - docker login -u $RPI_REGISTRY_USER -p $RPI_REGISTRY_PASSWORD registry.gitlab.com
-#     - docker stack deploy --with-registry-auth --compose-file ./docker-compose.deploy.yml $STACK
-#   only:
-#     - master
-#   tags:
-#     - rpi-server
-#     - shome
