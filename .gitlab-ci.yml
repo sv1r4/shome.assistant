@@ -33,6 +33,29 @@ build:images:
     - docker build -t $TAG .
     - docker push $TAG
 
+    
+deploy:laptop-assitant:
+  stage: deploy
+  variables:
+    IMAGE_PREFIX: registry.gitlab.com/sv1r4/shome.dlna/
+    GIT_SUBMODULE_STRATEGY: none
+  script:
+    - docker login -u $RPI_REGISTRY_USER -p $RPI_REGISTRY_PASSWORD registry.gitlab.com
+    - export SECRET_DIR=/home/docker/shome.assistant/secrets 
+    - mkdir -p $SECRET_DIR
+    - echo $GCP_KEY_DIALOGFLOW >> $SECRET_DIR/df_key.json
+    - if [[ $(docker ps -a -q -f name=s.assist) > 0 ]]; then docker rm -f $(docker ps -a -q -f name=s.assist) ; else echo docker s.assist not runnig ; fi
+    - docker run --privileged --restart always -ti -d -e PROJECT_ID=$PROJECT_ID -e SENSIVITY=$SENSIVITY -e "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json" -v "$SECRET_DIR:/app/secrets/" --name=s.assist $TAG  
+  only:
+    - master
+  tags:
+    - laptop-assistant
+    - shome
+
+# if [[ $(docker ps -a -q -f name=s.assist) > 0 ]]; then docker rm -f $(docker ps -a -q -f name=s.assist) ; else echo docker s.assist not runnig ; fi
+# docker build -t shome.assitant . && docker rm -f $(docker ps -a -q -f name=s.assist) && docker run --privileged --restart always -ti -d -e PROJECT_ID='***REMOVED***' -e SENSIVITY=0.8 --name=s.assist shome.assitant    
+
+
 # test:    
 #   image: docker
 #   stage: test
