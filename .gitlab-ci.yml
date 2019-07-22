@@ -36,7 +36,6 @@ deploy:laptop-assitant:
     IMAGE_PREFIX: registry.gitlab.com/sv1r4/shome.dlna/
     GIT_SUBMODULE_STRATEGY: none
   script:
-    - docker login -u $RPI_REGISTRY_USER -p $RPI_REGISTRY_PASSWORD registry.gitlab.com
     - export SECRET_DIR=/home/docker/shome.assistant/secrets 
     - mkdir -p $SECRET_DIR
     - echo $GCP_KEY_DIALOGFLOW >> $SECRET_DIR/df_key.json
