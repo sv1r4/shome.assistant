@@ -1,8 +1,6 @@
 # encoding=utf8
 import sys
 
-#sys.setdefaultencoding('utf8')
-
 import argparse
 import os
 import platform
@@ -17,8 +15,6 @@ from six.moves import queue
 
 import simpleaudio as sa
 import wave
-#from Tkinter import *
-#import tkSnack
 
 import numpy as np
 import pyaudio
@@ -77,7 +73,6 @@ class ShomeAssistant(Thread):
         self._isHotwordDetect = False
         try:            
             if self._audio_stream is not None:
-              # self._audio_stream.stop_stream()
                self._audio_stream.close()
             if self._pa is not None:
                 self._pa.terminate()
@@ -119,10 +114,6 @@ class ShomeAssistant(Thread):
         try:
             self._is_playing = True
             args = ("play", filename)
-            #play in background
-            #subprocess.Popen(args, stdout=subprocess.PIPE)
-            #Or just:
-            #args = "bin/bar -c somefile.xml -d text.txt -r aString -f anotherString".split()
             popen = subprocess.Popen(args, stdout=subprocess.PIPE)
             popen.wait()
             output = popen.stdout.read()
@@ -189,8 +180,7 @@ class ShomeAssistant(Thread):
         session_path = session_client.session_path(self._project_id, session_id)
         print('Session path: {}\n'.format(session_path))
       
-        def _audio_callback_intent(in_data, frame_count, time_info, status):
-            #print("audio callback frame_count={0} status={1}".format(frame_count, status))            
+        def _audio_callback_intent(in_data, frame_count, time_info, status):     
             if not self._is_playing:
                 self._buff.put(in_data)            
             return None, pyaudio.paContinue
@@ -225,7 +215,6 @@ class ShomeAssistant(Thread):
                 output_audio_config = dialogflow.types.OutputAudioConfig(
                     audio_encoding=dialogflow.enums.OutputAudioEncoding.OUTPUT_AUDIO_ENCODING_LINEAR_16)
 
-
                 # The first request contains the configuration.
                 yield dialogflow.types.StreamingDetectIntentRequest(
                     session=session_path, query_input=query_input,
@@ -256,7 +245,6 @@ class ShomeAssistant(Thread):
                 transcript = response.recognition_result.transcript
                
                 print("intermediate transcript {0}".format(transcript))
-               # print('Stream response reognition result {0}'.format(response.recognition_result))
                 if response.recognition_result.is_final:
                     self.playSound(endpointing_file, False)
                     self._isIntentDetect = False
@@ -265,8 +253,6 @@ class ShomeAssistant(Thread):
                     print("intent {0}".format(intent    ))
                 if response.output_audio is not None and len(response.output_audio) > 0:
                     print("got audio response")
-                    #self.playSoundResponse(response.output_audio)
-                    
                     wav_file = 'output.wav'
                     with open(wav_file, 'wb') as out:
                         out.write(response.output_audio)  
@@ -292,26 +278,11 @@ class ShomeAssistant(Thread):
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()
 
-            # if self._pa is not None:
-            #     self._pa.terminate()
-
+        
             # delete Porcupine last to avoid segfault in callback.
             if self._porcupine is not None:
                 self._porcupine.delete()
             
-     
-        # # Note: The result from the last response is the final transcript along
-        # # with the detected content.
-        # query_result = response.query_result
-
-        # print('=' * 20)
-        # print('Query text: {}'.format(query_result.query_text))
-        # print('Detected intent: {} (confidence: {})\n'.format(
-        #     query_result.intent.display_name,
-        #     query_result.intent_detection_confidence))
-        # print('Fulfillment text: {}\n'.format(
-        #     query_result.fulfillment_text))
-
 
 
     def runDetectHotword(self):
@@ -333,13 +304,7 @@ class ShomeAssistant(Thread):
                     self.stopDetectHotword()                    
                     self._session_counter+=1
                     self.runDetectIntent(self._session_counter)
-               # elif num_keywords > 1 and result >= 0:
-               #     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
-                    # or add it here if you use multiple keywords
-               #     self.stopDetectHotword()
-                   # self.runDetectHotword()
-
-                
+                           
             return None, pyaudio.paContinue
 
         
@@ -368,23 +333,10 @@ class ShomeAssistant(Thread):
 
             self._audio_stream.start_stream()
 
-            # print("Started porcupine with following settings:")
-            # if self._input_device_index:
-            #     print("Input device: %d (check with --show_audio_devices_info)" % self._input_device_index)
-            # else:
-            #     print("Input device: default (check with --show_audio_devices_info)")
-            # print("Sample-rate: %d" % sample_rate)
-            # print("Channels: %d" % num_channels)
-            # print("Format: %d" % audio_format)
-            # print("Frame-length: %d" % frame_length)
             print("Keyword file(s): %s" % self._keyword_file_paths)
             print("Waiting for keywords ...\n")
 
-            while True:
-                #print("loop")
-                #if not self._isHotwordDetect and not self._isIntentDetect:                                        
-                   # self.playSound(self._wake_sound_file)
-                    
+            while True:                    
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
@@ -405,7 +357,6 @@ class ShomeAssistant(Thread):
 
     def run(self):
         self.runDetectHotword()
-       # self.runDetectIntent(self._session_counter)
  
 
 def _default_library_path():
