@@ -119,10 +119,6 @@ class ShomeAssistant(Thread):
         try:
             self._is_playing = True
             args = ("play", filename)
-            #play in background
-            #subprocess.Popen(args, stdout=subprocess.PIPE)
-            #Or just:
-            #args = "bin/bar -c somefile.xml -d text.txt -r aString -f anotherString".split()
             popen = subprocess.Popen(args, stdout=subprocess.PIPE)
             popen.wait()
             output = popen.stdout.read()
@@ -292,26 +288,11 @@ class ShomeAssistant(Thread):
                 self._audio_stream.stop_stream()
                 self._audio_stream.close()
 
-            # if self._pa is not None:
-            #     self._pa.terminate()
-
+        
             # delete Porcupine last to avoid segfault in callback.
             if self._porcupine is not None:
                 self._porcupine.delete()
             
-     
-        # # Note: The result from the last response is the final transcript along
-        # # with the detected content.
-        # query_result = response.query_result
-
-        # print('=' * 20)
-        # print('Query text: {}'.format(query_result.query_text))
-        # print('Detected intent: {} (confidence: {})\n'.format(
-        #     query_result.intent.display_name,
-        #     query_result.intent_detection_confidence))
-        # print('Fulfillment text: {}\n'.format(
-        #     query_result.fulfillment_text))
-
 
 
     def runDetectHotword(self):
@@ -333,13 +314,7 @@ class ShomeAssistant(Thread):
                     self.stopDetectHotword()                    
                     self._session_counter+=1
                     self.runDetectIntent(self._session_counter)
-               # elif num_keywords > 1 and result >= 0:
-               #     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
-                    # or add it here if you use multiple keywords
-               #     self.stopDetectHotword()
-                   # self.runDetectHotword()
-
-                
+                           
             return None, pyaudio.paContinue
 
         
@@ -368,23 +343,10 @@ class ShomeAssistant(Thread):
 
             self._audio_stream.start_stream()
 
-            # print("Started porcupine with following settings:")
-            # if self._input_device_index:
-            #     print("Input device: %d (check with --show_audio_devices_info)" % self._input_device_index)
-            # else:
-            #     print("Input device: default (check with --show_audio_devices_info)")
-            # print("Sample-rate: %d" % sample_rate)
-            # print("Channels: %d" % num_channels)
-            # print("Format: %d" % audio_format)
-            # print("Frame-length: %d" % frame_length)
             print("Keyword file(s): %s" % self._keyword_file_paths)
             print("Waiting for keywords ...\n")
 
-            while True:
-                #print("loop")
-                #if not self._isHotwordDetect and not self._isIntentDetect:                                        
-                   # self.playSound(self._wake_sound_file)
-                    
+            while True:                    
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
@@ -405,7 +367,6 @@ class ShomeAssistant(Thread):
 
     def run(self):
         self.runDetectHotword()
-       # self.runDetectIntent(self._session_counter)
  
 
 def _default_library_path():
