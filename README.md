@@ -1,3 +1,5 @@
+[![pipeline status](https://gitlab.com/sv1r4/shome.assistant/badges/master/pipeline.svg)](https://gitlab.com/sv1r4/shome.assistant/commits/master)
+
 ## build docker
 
 ``` shell
