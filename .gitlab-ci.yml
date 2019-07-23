@@ -16,7 +16,7 @@ before_script:
 
     
 build:images:
-  image: tmaier/docker-compose
+  image: docker
   stage: build
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
@@ -24,8 +24,6 @@ build:images:
     - docker:dind    
   script:    
     - cd ./src/shome.assistant  
-    - mkdir ./secrets 
-    - echo $GCP_KEY_DIALOGFLOW >> ./secrets/df_key.json
     - docker build -t $TAG .
     - docker push $TAG
 
@@ -33,14 +31,12 @@ build:images:
 deploy:laptop-assitant:
   stage: deploy
   variables:
-    IMAGE_PREFIX: registry.gitlab.com/sv1r4/shome.dlna/
     GIT_SUBMODULE_STRATEGY: none
   script:
-    - export SECRET_DIR=/home/docker/shome.assistant/secrets 
     - sudo mkdir -p $SECRET_DIR
     - sudo echo $GCP_KEY_DIALOGFLOW >> $SECRET_DIR/df_key.json
-    - if [[ $(docker ps -a -q -f name=s.assist) > 0 ]]; then docker rm -f $(docker ps -a -q -f name=s.assist) ; else echo docker s.assist not runnig ; fi
-    - docker run --privileged --restart always -ti -d -e PROJECT_ID=$PROJECT_ID -e SENSIVITY=$SENSIVITY -e "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json" -v "$SECRET_DIR:/app/secrets/" --name=s.assist $TAG  
+    - if [[ $(docker ps -a -q -f name=$DEPLOY_CONTAINER_NAME) > 0 ]]; then docker rm -f $(docker ps -a -q -f name=$DEPLOY_CONTAINER_NAME) ; else echo docker $DEPLOY_CONTAINER_NAME not runnig ; fi
+    - docker run --privileged --restart always -ti -d -e PROJECT_ID=$PROJECT_ID -e SENSIVITY=$SENSIVITY -e "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json" -v "$SECRET_DIR:/app/secrets/" --name=$DEPLOY_CONTAINER_NAME $TAG  
   only:
     - master
   tags:
