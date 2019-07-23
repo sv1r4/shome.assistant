@@ -1,8 +1,6 @@
 # encoding=utf8
 import sys
 
-#sys.setdefaultencoding('utf8')
-
 import argparse
 import os
 import platform
@@ -17,8 +15,6 @@ from six.moves import queue
 
 import simpleaudio as sa
 import wave
-#from Tkinter import *
-#import tkSnack
 
 import numpy as np
 import pyaudio
@@ -77,7 +73,6 @@ class ShomeAssistant(Thread):
         self._isHotwordDetect = False
         try:            
             if self._audio_stream is not None:
-              # self._audio_stream.stop_stream()
                self._audio_stream.close()
             if self._pa is not None:
                 self._pa.terminate()
@@ -185,8 +180,7 @@ class ShomeAssistant(Thread):
         session_path = session_client.session_path(self._project_id, session_id)
         print('Session path: {}\n'.format(session_path))
       
-        def _audio_callback_intent(in_data, frame_count, time_info, status):
-            #print("audio callback frame_count={0} status={1}".format(frame_count, status))            
+        def _audio_callback_intent(in_data, frame_count, time_info, status):     
             if not self._is_playing:
                 self._buff.put(in_data)            
             return None, pyaudio.paContinue
@@ -221,7 +215,6 @@ class ShomeAssistant(Thread):
                 output_audio_config = dialogflow.types.OutputAudioConfig(
                     audio_encoding=dialogflow.enums.OutputAudioEncoding.OUTPUT_AUDIO_ENCODING_LINEAR_16)
 
-
                 # The first request contains the configuration.
                 yield dialogflow.types.StreamingDetectIntentRequest(
                     session=session_path, query_input=query_input,
@@ -252,7 +245,6 @@ class ShomeAssistant(Thread):
                 transcript = response.recognition_result.transcript
                
                 print("intermediate transcript {0}".format(transcript))
-               # print('Stream response reognition result {0}'.format(response.recognition_result))
                 if response.recognition_result.is_final:
                     self.playSound(endpointing_file, False)
                     self._isIntentDetect = False
@@ -261,8 +253,6 @@ class ShomeAssistant(Thread):
                     print("intent {0}".format(intent    ))
                 if response.output_audio is not None and len(response.output_audio) > 0:
                     print("got audio response")
-                    #self.playSoundResponse(response.output_audio)
-                    
                     wav_file = 'output.wav'
                     with open(wav_file, 'wb') as out:
                         out.write(response.output_audio)  
