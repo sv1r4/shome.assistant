@@ -28,13 +28,7 @@ from porcupine import Porcupine
 
 
 class ShomeAssistant(Thread):
-    """
-    Demo class for wake word detection (aka Porcupine) library. It creates an input audio stream from a microphone,
-    monitors it, and upon detecting the specified wake word(s) prints the detection time and index of wake word on
-    console. It optionally saves the recorded audio into a file for further review.
-    This is the non-blocking version that uses the callback function of PyAudio.
-    """
-
+   
     def __init__(
             self,
             library_path,
@@ -124,47 +118,7 @@ class ShomeAssistant(Thread):
             print(error)
         self._is_playing = False 
 
-    def playSoundResponseBask(self, filename):
-        if self._is_playing:
-            print("already playing")
-            return
-        try:
-            self._is_playing = True
-
-            # Set chunk size of 1024 samples per data frame
-            chunk = 1024  
-
-            # Open the sound file 
-            wf = wave.open(filename, 'rb')
-
-            # Create an interface to PortAudio
-            p = pyaudio.PyAudio()
-
-            # Open a .Stream object to write the WAV file to
-            # 'output = True' indicates that the sound will be played rather than recorded
-            stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
-                            channels = wf.getnchannels(),
-                            rate = wf.getframerate(),
-                            output = True)
-
-            # Read data in chunks
-            data = wf.readframes(chunk)
-
-            # Play the sound by writing the audio data to the stream
-            while len(data) > 0:
-                stream.write(data)
-                data = wf.readframes(chunk)
-
-            # Close and terminate the stream
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
-        
-        except:
-            print("play error")
-        self._is_playing = False 
-
-
+    
     def runDetectIntent(self, session_id):
         print("run detect intent")
         self._isIntentDetect = True
