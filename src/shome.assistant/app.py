@@ -197,7 +197,7 @@ class ShomeAssistant(Thread):
             isEndConversation = True
             for response in responses:
                 transcript = response.recognition_result.transcript
-               
+                # response.query_result.webhook_payload google expectUserResponse
                 print("intermediate transcript {0}".format(transcript))
                 if response.recognition_result.is_final:
                     self.playSound(endpointing_file, False)
