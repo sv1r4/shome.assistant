@@ -13,7 +13,10 @@
             "args": ["--keyword_file_paths", "resources/keyword_files/linux/alexa_linux.ppn",
             "--model_file_path", "lib/common/porcupine_params.pv",
             "--sensitivity", "1",
-            "--project_id", "shome-assistant"],
+            "--project_id", "shome-assistant",
+            "--mqtt_host", "localhost",
+            "--mqtt_port", "1885",
+        ],
             "console": "integratedTerminal",
         }
     ]

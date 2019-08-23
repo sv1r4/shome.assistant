@@ -26,6 +26,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
 
 from porcupine import Porcupine
 
+import paho.mqtt.client as mqtt
+
+
+
 
 class ShomeAssistant(Thread):
    
@@ -35,6 +39,8 @@ class ShomeAssistant(Thread):
             model_file_path,
             keyword_file_paths,
             project_id,
+            mqtt_host,
+            mqtt_port,
             sensitivity=0.6,
             input_device_index=None):
 
@@ -47,6 +53,11 @@ class ShomeAssistant(Thread):
         self._input_device_index = input_device_index
         self._wake_sound_file = "./resources/sounds/med_ui_wakesound_touch.wav"
         self._project_id = project_id
+        self._mqtt = mqtt.Client()
+        self._mqtt.on_connect = self.onMqttConnect
+        self._mqtt.on_message = self.onMqttMessage
+        self._mqtt_host = mqtt_host
+        self._mqtt_port = mqtt_port
      
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
@@ -61,6 +72,13 @@ class ShomeAssistant(Thread):
     _hotword_counter = 0
     _is_playing = False
 
+    def onMqttConnect(self, client, userdata, flags, rc):
+        print("Connected with result code "+str(rc))
+        self._mqtt.subscribe("test")
+  
+
+    def onMqttMessage(self, client, userdata, msg):
+        print(msg.topic+" "+str(msg.payload))
 
     def stopDetectHotword(self):
         print("stop hotword detect")
@@ -310,7 +328,13 @@ class ShomeAssistant(Thread):
            
 
     def run(self):
-        self.runDetectHotword()
+        self._mqtt.connect_async(self._mqtt_host, self._mqtt_port)
+        self._mqtt.loop_start()       
+        #self.runDetectHotword()        
+        while True:                    
+            time.sleep(0.1)
+
+        
  
 
 def _default_library_path():
@@ -354,6 +378,8 @@ if __name__ == '__main__':
     parser.add_argument('--input_audio_device_index', help='index of input audio device', type=int, default=None)
 
     parser.add_argument('--project_id', help="google dialogflow project id", type=str)
+    parser.add_argument('--mqtt_host', help="mqtt host", type=str)
+    parser.add_argument('--mqtt_port', help="mqtt port", type=int)
 
     args = parser.parse_args()
 
@@ -368,5 +394,8 @@ if __name__ == '__main__':
         keyword_file_paths=[x.strip() for x in args.keyword_file_paths.split(',')],
         sensitivity=args.sensitivity,
         input_device_index=args.input_audio_device_index,
-        project_id=args.project_id
-    ).run()
+        project_id=args.project_id,
+        mqtt_host=args.mqtt_host,
+        mqtt_port=args.mqtt_port
+    ).start()
+
