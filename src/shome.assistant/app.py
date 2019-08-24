@@ -215,12 +215,26 @@ class ShomeAssistant(Thread):
             isEndConversation = True
             for response in responses:
                 transcript = response.recognition_result.transcript
-                # response.query_result.webhook_payload google expectUserResponse
                 print("intermediate transcript {0}".format(transcript))
                 if response.recognition_result.is_final:
                     self.playSound(endpointing_file, False)
                     self._isIntentDetect = False
                 intent = response.query_result.intent.display_name 
+                
+                pl = response.query_result.webhook_payload                
+                if pl is not None and pl != "":
+                    # print("payload = {0}".format(pl))
+                    try:
+                        googleFields = pl.fields['google'].struct_value.fields
+                        # print("googleFields {0} {1}".format(googleFields, type(googleFields)))
+                        expUserResponseField = googleFields['expectUserResponse']
+                        # print("expUserResponseField = {0} {1}".format(expUserResponseField, type(expUserResponseField)))
+                        expectUserResponse = expUserResponseField.bool_value
+                        print("expectUserResponse={0}".format(expectUserResponse))
+                        if expectUserResponse == True:
+                            isEndConversation = False
+                    except:
+                        print('error parse webhook payload')
                 if intent is not None and intent != "":
                     print("intent {0}".format(intent    ))
                 if response.output_audio is not None and len(response.output_audio) > 0:
@@ -330,10 +344,7 @@ class ShomeAssistant(Thread):
     def run(self):
         self._mqtt.connect_async(self._mqtt_host, self._mqtt_port)
         self._mqtt.loop_start()       
-        #self.runDetectHotword()        
-        while True:                    
-            time.sleep(0.1)
-
+        self.runDetectHotword()               
         
  
 
