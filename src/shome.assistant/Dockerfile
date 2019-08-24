@@ -11,7 +11,8 @@ RUN pip3 install pyaudio \
   soundfile \
   numpy \
   dialogflow \
-  simpleaudio
+  simpleaudio \
+  paho-mqtt
 
 FROM base as final
 RUN apt-get update && apt-get install -y curl \
@@ -27,4 +28,6 @@ COPY . .
 CMD python3 app.py --keyword_file_paths $KEYWORD_FILE_PATHS \
    --model_file_path $MODEL_FILE_PATH \
    --sensitivity $SENSIVITY \
-   --project_id $PROJECT_ID
+   --project_id $PROJECT_ID \
+   --mqtt_host $MQTT_HOST \
+   --mqtt_port $MQTT_PORT

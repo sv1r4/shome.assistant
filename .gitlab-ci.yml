@@ -36,7 +36,7 @@ deploy:laptop-assitant:
     - sudo mkdir -p $SECRET_DIR
     - sudo echo $GCP_KEY_DIALOGFLOW > $SECRET_DIR/df_key.json
     - if [[ $(docker ps -a -q -f name=$DEPLOY_CONTAINER_NAME) > 0 ]]; then docker rm -f $(docker ps -a -q -f name=$DEPLOY_CONTAINER_NAME) ; else echo docker $DEPLOY_CONTAINER_NAME not runnig ; fi
-    - docker run --privileged --restart always -ti -d -e PROJECT_ID=$PROJECT_ID -e SENSIVITY=$SENSIVITY -e "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json" -v "$SECRET_DIR:/app/secrets/" --name=$DEPLOY_CONTAINER_NAME $TAG  
+    - docker run --privileged --restart always -ti -d -e PROJECT_ID=$PROJECT_ID -e SENSIVITY=$SENSIVITY -e "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json" -e MQTT_HOST=$MQTT_HOST -e MQTT_PORT=$MQTT_PORT -v "$SECRET_DIR:/app/secrets/" --name=$DEPLOY_CONTAINER_NAME $TAG  
   only:
     - master
   tags:

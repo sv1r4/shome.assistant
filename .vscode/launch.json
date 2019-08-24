@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python3: app.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/shome.assistant/app.py",
+            "cwd": "${workspaceFolder}/src/shome.assistant",
+            "args": ["--keyword_file_paths", "resources/keyword_files/linux/alexa_linux.ppn",
+            "--model_file_path", "lib/common/porcupine_params.pv",
+            "--sensitivity", "1",
+            "--project_id", "shome-assistant",
+            "--mqtt_host", "localhost",
+            "--mqtt_port", "1885",
+        ],
+            "console": "integratedTerminal",
+        }
+    ]
+}

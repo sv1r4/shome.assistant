@@ -2,3 +2,5 @@
 **/node_modules/
 **/secrets
 src/shome.assistant/npm-debug.log
+
+src/shome.assistant/binding/python/__pycache__/

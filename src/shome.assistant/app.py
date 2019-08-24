@@ -26,21 +26,21 @@ sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
 
 from porcupine import Porcupine
 
+import paho.mqtt.client as mqtt
+
+
+
 
 class ShomeAssistant(Thread):
-    """
-    Demo class for wake word detection (aka Porcupine) library. It creates an input audio stream from a microphone,
-    monitors it, and upon detecting the specified wake word(s) prints the detection time and index of wake word on
-    console. It optionally saves the recorded audio into a file for further review.
-    This is the non-blocking version that uses the callback function of PyAudio.
-    """
-
+   
     def __init__(
             self,
             library_path,
             model_file_path,
             keyword_file_paths,
             project_id,
+            mqtt_host,
+            mqtt_port,
             sensitivity=0.6,
             input_device_index=None):
 
@@ -53,6 +53,11 @@ class ShomeAssistant(Thread):
         self._input_device_index = input_device_index
         self._wake_sound_file = "./resources/sounds/med_ui_wakesound_touch.wav"
         self._project_id = project_id
+        self._mqtt = mqtt.Client()
+        self._mqtt.on_connect = self.onMqttConnect
+        self._mqtt.on_message = self.onMqttMessage
+        self._mqtt_host = mqtt_host
+        self._mqtt_port = mqtt_port
      
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
@@ -67,6 +72,13 @@ class ShomeAssistant(Thread):
     _hotword_counter = 0
     _is_playing = False
 
+    def onMqttConnect(self, client, userdata, flags, rc):
+        print("Connected with result code "+str(rc))
+        self._mqtt.subscribe("test")
+  
+
+    def onMqttMessage(self, client, userdata, msg):
+        print(msg.topic+" "+str(msg.payload))
 
     def stopDetectHotword(self):
         print("stop hotword detect")
@@ -124,47 +136,7 @@ class ShomeAssistant(Thread):
             print(error)
         self._is_playing = False 
 
-    def playSoundResponseBask(self, filename):
-        if self._is_playing:
-            print("already playing")
-            return
-        try:
-            self._is_playing = True
-
-            # Set chunk size of 1024 samples per data frame
-            chunk = 1024  
-
-            # Open the sound file 
-            wf = wave.open(filename, 'rb')
-
-            # Create an interface to PortAudio
-            p = pyaudio.PyAudio()
-
-            # Open a .Stream object to write the WAV file to
-            # 'output = True' indicates that the sound will be played rather than recorded
-            stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
-                            channels = wf.getnchannels(),
-                            rate = wf.getframerate(),
-                            output = True)
-
-            # Read data in chunks
-            data = wf.readframes(chunk)
-
-            # Play the sound by writing the audio data to the stream
-            while len(data) > 0:
-                stream.write(data)
-                data = wf.readframes(chunk)
-
-            # Close and terminate the stream
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
-        
-        except:
-            print("play error")
-        self._is_playing = False 
-
-
+    
     def runDetectIntent(self, session_id):
         print("run detect intent")
         self._isIntentDetect = True
@@ -243,12 +215,26 @@ class ShomeAssistant(Thread):
             isEndConversation = True
             for response in responses:
                 transcript = response.recognition_result.transcript
-               
                 print("intermediate transcript {0}".format(transcript))
                 if response.recognition_result.is_final:
                     self.playSound(endpointing_file, False)
                     self._isIntentDetect = False
                 intent = response.query_result.intent.display_name 
+                
+                pl = response.query_result.webhook_payload                
+                if pl is not None and pl != "":
+                    # print("payload = {0}".format(pl))
+                    try:
+                        googleFields = pl.fields['google'].struct_value.fields
+                        # print("googleFields {0} {1}".format(googleFields, type(googleFields)))
+                        expUserResponseField = googleFields['expectUserResponse']
+                        # print("expUserResponseField = {0} {1}".format(expUserResponseField, type(expUserResponseField)))
+                        expectUserResponse = expUserResponseField.bool_value
+                        print("expectUserResponse={0}".format(expectUserResponse))
+                        if expectUserResponse == True:
+                            isEndConversation = False
+                    except:
+                        print('error parse webhook payload')
                 if intent is not None and intent != "":
                     print("intent {0}".format(intent    ))
                 if response.output_audio is not None and len(response.output_audio) > 0:
@@ -356,7 +342,10 @@ class ShomeAssistant(Thread):
            
 
     def run(self):
-        self.runDetectHotword()
+        self._mqtt.connect_async(self._mqtt_host, self._mqtt_port)
+        self._mqtt.loop_start()       
+        self.runDetectHotword()               
+        
  
 
 def _default_library_path():
@@ -400,6 +389,8 @@ if __name__ == '__main__':
     parser.add_argument('--input_audio_device_index', help='index of input audio device', type=int, default=None)
 
     parser.add_argument('--project_id', help="google dialogflow project id", type=str)
+    parser.add_argument('--mqtt_host', help="mqtt host", type=str)
+    parser.add_argument('--mqtt_port', help="mqtt port", type=int)
 
     args = parser.parse_args()
 
@@ -414,5 +405,8 @@ if __name__ == '__main__':
         keyword_file_paths=[x.strip() for x in args.keyword_file_paths.split(',')],
         sensitivity=args.sensitivity,
         input_device_index=args.input_audio_device_index,
-        project_id=args.project_id
-    ).run()
+        project_id=args.project_id,
+        mqtt_host=args.mqtt_host,
+        mqtt_port=args.mqtt_port
+    ).start()
+
