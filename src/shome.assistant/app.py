@@ -61,6 +61,7 @@ class ShomeAssistant(Thread):
         self._mqtt_host = mqtt_host
         self._mqtt_port = mqtt_port
         self._datastore_client = datastore.Client()
+        self._events = list()
      
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
@@ -77,11 +78,24 @@ class ShomeAssistant(Thread):
 
     def onMqttConnect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
-        self._mqtt.subscribe("test")
+        
+        self._events = self.retriveMqttEvents()
+        for e in self._events:
+            t = e["topic"]
+            print("subscribe to '{0}'".format(t))
+            self._mqtt.subscribe(t)
   
 
     def onMqttMessage(self, client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
+        for event in self._events:
+            t = event["topic"]
+            e = event["event"]
+            if t == msg.topic:
+                print("topic='{0}' matched with event type '{1}'".format(t, e))
+                self._session_counter+=1
+                self.detectEvent(self._session_counter, e)
+
 
     def stopDetectHotword(self):
         print("stop hotword detect")
@@ -217,36 +231,7 @@ class ShomeAssistant(Thread):
             print('=' * 20)
             isEndConversation = True
             for response in responses:
-                transcript = response.recognition_result.transcript
-                print("intermediate transcript {0}".format(transcript))
-                if response.recognition_result.is_final:
-                    self.playSound(endpointing_file, False)
-                    self._isIntentDetect = False
-                intent = response.query_result.intent.display_name 
-                
-                pl = response.query_result.webhook_payload                
-                if pl is not None and pl != "":
-                    # print("payload = {0}".format(pl))
-                    try:
-                        googleFields = pl.fields['google'].struct_value.fields
-                        # print("googleFields {0} {1}".format(googleFields, type(googleFields)))
-                        expUserResponseField = googleFields['expectUserResponse']
-                        # print("expUserResponseField = {0} {1}".format(expUserResponseField, type(expUserResponseField)))
-                        expectUserResponse = expUserResponseField.bool_value
-                        print("expectUserResponse={0}".format(expectUserResponse))
-                        if expectUserResponse == True:
-                            isEndConversation = False
-                    except:
-                        print('error parse webhook payload')
-                if intent is not None and intent != "":
-                    print("intent {0}".format(intent    ))
-                if response.output_audio is not None and len(response.output_audio) > 0:
-                    print("got audio response")
-                    wav_file = 'output.wav'
-                    with open(wav_file, 'wb') as out:
-                        out.write(response.output_audio)  
-
-                    self.playSoundResponse(wav_file)
+                self.handleDialogflowResponse(response)
                 
             self.stopDetectIntent()   
            
@@ -343,10 +328,56 @@ class ShomeAssistant(Thread):
                 self._porcupine.delete()
 
     def retriveMqttEvents(self):
-        q = self._datastore_client.query(kind='MqttEvent')        
-        events = list(q.fetch())
-        print(events)
+        q = self._datastore_client.query(kind='MqttEvent')    
+        return list(q.fetch())
         
+
+    def detectEvent(self, session_id, event_name): 
+        session_client = dialogflow.SessionsClient()   
+        session = session_client.session_path(self._project_id, session_id)
+        
+
+        event_input = dialogflow.types.EventInput(name=event_name, language_code='ru-RU')
+
+        query_input = dialogflow.types.QueryInput(event=event_input)
+
+        response = session_client.detect_intent(session=session, query_input=query_input)
+
+        self.handleDialogflowResponse(response)
+
+
+
+    def handleDialogflowResponse(self, response):
+        if hasattr(response, 'recognition_result'):
+            transcript = response.recognition_result.transcript
+            print("intermediate transcript {0}".format(transcript))
+            if response.recognition_result.is_final:
+                self.playSound(endpointing_file, False)
+                self._isIntentDetect = False
+
+        intent = response.query_result.intent.display_name 
+        
+        pl = response.query_result.webhook_payload                
+        if pl is not None and pl != "":
+            try:
+                googleFields = pl.fields['google'].struct_value.fields
+                expUserResponseField = googleFields['expectUserResponse']
+                expectUserResponse = expUserResponseField.bool_value
+                print("expectUserResponse={0}".format(expectUserResponse))
+                if expectUserResponse == True:
+                    isEndConversation = False
+            except:
+                print('error parse webhook payload')
+        if intent is not None and intent != "":
+            print("intent {0}".format(intent))
+        if response.output_audio is not None and len(response.output_audio) > 0:
+            print("got audio response")
+            wav_file = 'output.wav'
+            with open(wav_file, 'wb') as out:
+                out.write(response.output_audio)  
+
+            self.playSoundResponse(wav_file)
+    
 
     def run(self):
         self._mqtt.connect_async(self._mqtt_host, self._mqtt_port)
