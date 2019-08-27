@@ -408,11 +408,10 @@ class ShomeAssistant(Thread):
 
     def run(self):
         self._mqtt.connect_async(self._mqtt_host, self._mqtt_port)
-        self._mqtt.loop_start()      
-        self.retriveMqttEvents() 
-        # self.runDetectHotword()               
-        while True:
-            time.sleep(0.1)
+        self._mqtt.loop_start()  
+        self.runDetectHotword()               
+        # while True:
+        #    time.sleep(0.1)
         
  
 
