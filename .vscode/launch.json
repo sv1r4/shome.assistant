@@ -15,8 +15,8 @@
             "--sensitivity", "1",
             "--project_id", "shome-assistant",
             "--mqtt_host", "localhost",
-            "--mqtt_port", "1885",
-        ],
+            "--mqtt_port", "1885" ],            
+            "env": {"GOOGLE_APPLICATION_CREDENTIALS":"${workspaceFolder}/src/shome.assistant/secrets/service_key.json"},
             "console": "integratedTerminal",
         }
     ]
