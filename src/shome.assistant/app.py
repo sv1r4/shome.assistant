@@ -28,6 +28,8 @@ from porcupine import Porcupine
 
 import paho.mqtt.client as mqtt
 
+from google.cloud import datastore
+
 
 
 
@@ -58,6 +60,7 @@ class ShomeAssistant(Thread):
         self._mqtt.on_message = self.onMqttMessage
         self._mqtt_host = mqtt_host
         self._mqtt_port = mqtt_port
+        self._datastore_client = datastore.Client()
      
     _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
 
@@ -339,12 +342,19 @@ class ShomeAssistant(Thread):
             if self._porcupine is not None:
                 self._porcupine.delete()
 
-           
+    def retriveMqttEvents(self):
+        q = self._datastore_client.query(kind='MqttEvent')        
+        events = list(q.fetch())
+        print(events)
+        
 
     def run(self):
         self._mqtt.connect_async(self._mqtt_host, self._mqtt_port)
-        self._mqtt.loop_start()       
-        self.runDetectHotword()               
+        self._mqtt.loop_start()      
+        self.retriveMqttEvents() 
+        # self.runDetectHotword()               
+        while True:
+            time.sleep(0.1)
         
  
 
