@@ -12,12 +12,13 @@ RUN pip3 install pyaudio \
   numpy \
   dialogflow \
   simpleaudio \
-  paho-mqtt
+  paho-mqtt \
+  google-cloud-datastore
 
 FROM base as final
 RUN apt-get update && apt-get install -y curl \
    sox
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/df_key.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/service_key.json
 ENV LANG=C.UTF-8
 ENV SENSIVITY=1
 #ENV KEYWORD_FILE_PATHS=resources/keyword_files/linux/alexa_linux_compressed.ppn
