@@ -335,6 +335,15 @@ class ShomeAssistant(Thread):
         q = self._datastore_client.query(kind='MqttEvent')    
         return list(q.fetch())
         
+    def safeParseJson(self, str):
+        res = {}
+        try:
+            res = json.loads(str)
+        except:
+            return dict()
+        else:
+            return res
+
 
     def detectEvent(self, session_id, event_name, payload): 
         session_client = dialogflow.SessionsClient()   
@@ -342,11 +351,13 @@ class ShomeAssistant(Thread):
         
         
         parameters = Struct(fields={'value': Value(string_value=payload)})
-        try:
-            for key, value in json.loads(payload).items():
-                parameters[key] = value
-        except err:
-            pass
+        
+        js = self.safeParseJson(payload)
+       
+        
+        for key, value in js.items():
+            parameters[key] = value
+        
         
         event_input = dialogflow.types.EventInput(name=event_name, language_code='ru-RU',
             parameters = parameters)
