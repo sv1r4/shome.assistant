@@ -229,19 +229,19 @@ class ShomeAssistant(Thread):
             responses = session_client.streaming_detect_intent(requests)
 
             print('=' * 20)
-            isEndConversation = True
+            self._isEndConversation = True
             for response in responses:
                 self.handleDialogflowResponse(response)
                 
             self.stopDetectIntent()   
            
-            if isEndConversation:
+            if self._isEndConversation:
                 print('end conversation')                
                 self.runDetectHotword()
             else:      
                 self.playSound(self._wake_sound_file)          
                 print('conversation continue')
-                self.runDetectIntent(self._session_counter)
+                self.runDetectIntent(session_id)
 
 
            
@@ -345,6 +345,12 @@ class ShomeAssistant(Thread):
 
         self.handleDialogflowResponse(response)
 
+        if not self._isEndConversation:            
+            self.playSound(self._wake_sound_file)          
+            print('event conversation continue')            
+            self.stopDetectHotword()                    
+            self.runDetectIntent(session_id)
+
 
 
     def handleDialogflowResponse(self, response):
@@ -365,7 +371,7 @@ class ShomeAssistant(Thread):
                 expectUserResponse = expUserResponseField.bool_value
                 print("expectUserResponse={0}".format(expectUserResponse))
                 if expectUserResponse == True:
-                    isEndConversation = False
+                    self._isEndConversation = False
             except:
                 print('error parse webhook payload')
         if intent is not None and intent != "":
