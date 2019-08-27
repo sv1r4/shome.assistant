@@ -169,7 +169,6 @@ class ShomeAssistant(Thread):
         language_code = 'ru-RU'
         session_id = '{}'.format(session_id)
         print("session #{}".format(session_id))
-        endpointing_file = "./resources/sounds/med_ui_endpointing.wav"
 
         session_path = session_client.session_path(self._project_id, session_id)
         print('Session path: {}\n'.format(session_path))
@@ -368,7 +367,8 @@ class ShomeAssistant(Thread):
     def handleDialogflowResponse(self, response):
         if hasattr(response, 'recognition_result'):
             transcript = response.recognition_result.transcript
-            print("intermediate transcript {0}".format(transcript))
+            print("intermediate transcript {0}".format(transcript))            
+            endpointing_file = "./resources/sounds/med_ui_endpointing.wav"
             if response.recognition_result.is_final:
                 self.playSound(endpointing_file, False)
                 self._isIntentDetect = False
