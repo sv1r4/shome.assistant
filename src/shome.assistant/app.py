@@ -30,6 +30,11 @@ import paho.mqtt.client as mqtt
 
 from google.cloud import datastore
 
+import json
+
+from google.protobuf.struct_pb2 import Struct
+from google.protobuf.struct_pb2 import Value
+
 
 
 
@@ -94,7 +99,7 @@ class ShomeAssistant(Thread):
             if t == msg.topic:
                 print("topic='{0}' matched with event type '{1}'".format(t, e))
                 self._session_counter+=1
-                self.detectEvent(self._session_counter, e)
+                self.detectEvent(self._session_counter, e, msg.payload)
 
 
     def stopDetectHotword(self):
@@ -332,17 +337,24 @@ class ShomeAssistant(Thread):
         return list(q.fetch())
         
 
-    def detectEvent(self, session_id, event_name): 
+    def detectEvent(self, session_id, event_name, payload): 
         session_client = dialogflow.SessionsClient()   
         session = session_client.session_path(self._project_id, session_id)
         
-
-        event_input = dialogflow.types.EventInput(name=event_name, language_code='ru-RU')
+        
+        parameters = Struct(fields={'value': Value(string_value=payload)})
+        try:
+            for key, value in json.loads(payload).items():
+                parameters[key] = value
+        except err:
+            pass
+        
+        event_input = dialogflow.types.EventInput(name=event_name, language_code='ru-RU',
+            parameters = parameters)
 
         query_input = dialogflow.types.QueryInput(event=event_input)
 
         response = session_client.detect_intent(session=session, query_input=query_input)
-
         self.handleDialogflowResponse(response)
 
         if not self._isEndConversation:            
@@ -361,9 +373,16 @@ class ShomeAssistant(Thread):
                 self.playSound(endpointing_file, False)
                 self._isIntentDetect = False
 
-        intent = response.query_result.intent.display_name 
-        
-        pl = response.query_result.webhook_payload                
+        intent = ''        
+        text = ''
+        pl = ''
+        if hasattr(response, 'query_result') and hasattr(response.query_result, 'fulfillment_text'):
+            text = response.query_result.fulfillment_text
+        if hasattr(response, 'query_result') and hasattr(response.query_result, 'intent'):
+            intent = response.query_result.intent.display_name 
+        if hasattr(response, 'query_result') and hasattr(response.query_result, 'webhook_payload'):
+            pl = response.query_result.webhook_payload       
+                 
         if pl is not None and pl != "":
             try:
                 googleFields = pl.fields['google'].struct_value.fields
@@ -375,7 +394,9 @@ class ShomeAssistant(Thread):
             except:
                 print('error parse webhook payload')
         if intent is not None and intent != "":
-            print("intent {0}".format(intent))
+            print("intent '{0}'".format(intent))
+        if text is not None and text != "":
+            print("text '{0}'".format(text))
         if response.output_audio is not None and len(response.output_audio) > 0:
             print("got audio response")
             wav_file = 'output.wav'
