@@ -425,8 +425,20 @@ class ShomeAssistant(Thread):
         
     def connectMqtt(self):
         self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)
-        self._mqtt.reconnect_delay_set(min_delay=1, max_delay=5)
         self._mqtt.loop_start()  
+        thread = Thread(target=self.reconnectMqtt, args=())
+        thread.daemon = True
+        thread.start()
+            
+    def reconnectMqtt(self):
+        while True:
+            #try connect with interval
+            time.sleep(60)
+            try:                   
+                self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)   
+               # self._mqtt.reconnect()
+            except:
+                print('reconnect error')
 
 def _default_library_path():
     system = platform.system()
