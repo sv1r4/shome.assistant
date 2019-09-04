@@ -337,14 +337,13 @@ class ShomeAssistant(Thread):
         return list(q.fetch())
         
     def safeParseJson(self, str):
-        res = {}
         try:
-            res = json.loads(str)
+            return json.loads(str)
         except:
             return dict()
-        else:
-            return res
 
+    def normilizeKeyDialogflow(self, s):
+        return s.replace(".", "_")
 
     def detectEvent(self, session_id, event_name, payload): 
         session_client = dialogflow.SessionsClient()   
@@ -355,9 +354,10 @@ class ShomeAssistant(Thread):
         
         js = self.safeParseJson(payload)
        
-        
-        for key, value in js.items():
-            parameters[key] = value
+        if hasattr(js, 'items'):
+            for key, value in js.items():
+                nKey = self.normilizeKeyDialogflow(key)
+                parameters[nKey] = value
         
         
         event_input = dialogflow.types.EventInput(name=event_name, language_code='ru-RU',
