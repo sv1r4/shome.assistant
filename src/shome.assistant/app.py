@@ -100,7 +100,6 @@ class ShomeAssistant(Thread):
                 self._session_counter+=1
                 self._threadDetectEvent = Thread(target=self.detectEvent, args=(self._session_counter, e, msg.payload))
                 self._threadDetectEvent.start()
-
                 #self.detectEvent(self._session_counter, e, msg.payload)
         print("done onMqttMessage")
 
@@ -374,6 +373,10 @@ class ShomeAssistant(Thread):
             print('event conversation continue')            
             self.stopDetectHotword()                    
             self.runDetectIntent(session_id)
+        else:
+            print('event conversation finished')            
+            self.stopDetectIntent()
+            self.runDetectHotword()
 
 
 
