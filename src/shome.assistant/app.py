@@ -76,6 +76,7 @@ class ShomeAssistant(Thread):
         self._session_counter = 0
         self._hotword_counter = 0
         self._is_playing = False
+        self._threadDetectEvent = None        
      
 
     def onMqttConnect(self, client, userdata, flags, rc):
@@ -96,8 +97,11 @@ class ShomeAssistant(Thread):
             if t == msg.topic:
                 print("topic='{0}' matched with event type '{1}'".format(t, e))
                 self._session_counter+=1
-                self.detectEvent(self._session_counter, e, msg.payload)
+                self._threadDetectEvent = Thread(target=self.detectEvent, args=dict(session_client = self._session_counter, event_name = e, payload = msg.payload))
+                self._threadDetectEvent.start()
 
+                #self.detectEvent(self._session_counter, e, msg.payload)
+        print("done onMqttMessage")
 
     def stopDetectHotword(self):
         print("stop hotword detect")
