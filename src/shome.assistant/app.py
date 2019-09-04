@@ -402,7 +402,8 @@ class ShomeAssistant(Thread):
                 expUserResponseField = googleFields['expectUserResponse']
                 expectUserResponse = expUserResponseField.bool_value
                 print("expectUserResponse={0}".format(expectUserResponse))
-                self._isEndConversation = expectUserResponse == False
+                if expectUserResponse == True: 
+                    self._isEndConversation = False 
             except:
                 print('error parse webhook payload')
         if intent is not None and intent != "":
