@@ -67,19 +67,16 @@ class ShomeAssistant(Thread):
         self._mqtt_port = mqtt_port
         self._datastore_client = datastore.Client()
         self._events = list()
+        self._porcupine = None
+        self._pa = None
+        self._audio_stream = None
+        self._isHotwordDetect = False
+        self._isIntentDetect = False
+        self._buff = queue.Queue()
+        self._session_counter = 0
+        self._hotword_counter = 0
+        self._is_playing = False
      
-    _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
-
-#todo init in constructor
-    _porcupine = None
-    _pa = None
-    _audio_stream = None
-    _isHotwordDetect = False
-    _isIntentDetect = False
-    _buff = queue.Queue()
-    _session_counter = 0
-    _hotword_counter = 0
-    _is_playing = False
 
     def onMqttConnect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
