@@ -76,7 +76,8 @@ class ShomeAssistant(Thread):
         self._session_counter = 0
         self._hotword_counter = 0
         self._is_playing = False
-        self._threadDetectEvent = None        
+        self._threadDetectEvent = None  
+        self._isEndConversation = True
      
 
     def onMqttConnect(self, client, userdata, flags, rc):
@@ -401,8 +402,7 @@ class ShomeAssistant(Thread):
                 expUserResponseField = googleFields['expectUserResponse']
                 expectUserResponse = expUserResponseField.bool_value
                 print("expectUserResponse={0}".format(expectUserResponse))
-                if expectUserResponse == True:
-                    self._isEndConversation = False
+                self._isEndConversation = expectUserResponse == False
             except:
                 print('error parse webhook payload')
         if intent is not None and intent != "":
