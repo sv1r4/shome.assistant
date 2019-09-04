@@ -98,7 +98,7 @@ class ShomeAssistant(Thread):
             if t == msg.topic:
                 print("topic='{0}' matched with event type '{1}'".format(t, e))
                 self._session_counter+=1
-                self._threadDetectEvent = Thread(target=self.detectEvent, args=dict(session_client = self._session_counter, event_name = e, payload = msg.payload))
+                self._threadDetectEvent = Thread(target=self.detectEvent, args=(self._session_counter, e, msg.payload))
                 self._threadDetectEvent.start()
 
                 #self.detectEvent(self._session_counter, e, msg.payload)
