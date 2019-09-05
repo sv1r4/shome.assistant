@@ -437,11 +437,11 @@ class ShomeAssistant(Thread):
             
     def reconnectMqtt(self):
         while True:
-            #try connect with interval
-            time.sleep(60)
+            #reconnect with interval
+            time.sleep(600)
             try:                   
-                self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)   
-               # self._mqtt.reconnect()
+              #  self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)   
+                self._mqtt.reconnect()
             except:
                 print('reconnect error')
 
