@@ -317,10 +317,10 @@ class ShomeAssistant(Thread):
             if frame_count >= self._porcupine.frame_length:
                 pcm = struct.unpack_from("h" * self._porcupine.frame_length, in_data)
                 result = self._porcupine.process(pcm)
-                if self._isMute == True:
-                    print("mute. skip event handle")
-                else:
-                    if num_keywords == 1 and result:
+                if num_keywords == 1 and result:                    
+                    if self._isMute == True:
+                        print("mute. skip hotword handle")
+                    else:
                         print('[%s] detected keyword' % str(datetime.now()))    
                         self.playSound(self._wake_sound_file, False)   
                         self.stopDetectHotword()                    
