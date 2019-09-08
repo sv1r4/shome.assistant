@@ -77,6 +77,7 @@ class ShomeAssistant(Thread):
         self._hotword_counter = 0
         self._is_playing = False
         self._threadDetectEvent = None  
+        self._threadDelayedUnmute = None
         self._isEndConversation = True
         self._isMute = False
         self._muteTopic = "assist/c/mute"
@@ -94,18 +95,37 @@ class ShomeAssistant(Thread):
         print("subscribe to mute topic '{0}'".format(self._muteTopic))            
         self._mqtt.subscribe(self._muteTopic)
   
+    def parseDurationToSec(self, duration):
+        amount = duration["amount"]
+        unit = duration["unit"]
+        k = 1
+        if unit == 'h':
+            k = 60 * 60
+        if unit == 'min' or unit == 'm':
+            k = 60
+        return amount * k
+
+    def delayUnmute(self, delay):        
+        time.sleep(delay)
+        print("self unmute after {0} s".format(delay))
+        self._isMute = False
 
     def onMqttMessage(self, client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
         if msg.topic == self._muteTopic:
             print("Mute command received")
-            if msg.payload.decode('UTF-8') == "1":
-                print("MUTE ON")
-                self._isMute = True
+            payload = msg.payload.decode('UTF-8')
+            js = self.safeParseJson(payload)
+            self._isMute = js["isMute"]
+            period = js["period"]
+            muteForSec = self.parseDurationToSec(period)        
+            if self._isMute == True:
+                print("Set MUTE ON for {0} ({1}s)".format(period, muteForSec))
+                # start thread for delayed unmute
+                self._threadDelayedUnmute = Thread(target=self.delayUnmute, args=((muteForSec,)))
+                self._threadDelayedUnmute.start()
             else:
-                if msg.payload.decode('UTF-8') == "0":
-                    print("MUTE OFF")
-                    self._isMute = False
+                print("Set MUTE OFF")
             return
         print("search for event")
         for event in self._events:
