@@ -78,28 +78,48 @@ class ShomeAssistant(Thread):
         self._is_playing = False
         self._threadDetectEvent = None  
         self._isEndConversation = True
+        self._isMute = False
+        self._muteTopic = "assist/c/mute"
      
 
     def onMqttConnect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
         
         self._events = self.retriveMqttEvents()
+        
         for e in self._events:
             t = e["topic"]
             print("subscribe to '{0}'".format(t))
             self._mqtt.subscribe(t)
+        print("subscribe to mute topic '{0}'".format(self._muteTopic))            
+        self._mqtt.subscribe(self._muteTopic)
   
 
     def onMqttMessage(self, client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
+        if msg.topic == self._muteTopic:
+            print("Mute command received")
+            if msg.payload.decode('UTF-8') == "1":
+                print("MUTE ON")
+                self._isMute = True
+            else:
+                if msg.payload.decode('UTF-8') == "0":
+                    print("MUTE OFF")
+                    self._isMute = False
+            return
+        print("search for event")
         for event in self._events:
             t = event["topic"]
             e = event["event"]
             if t == msg.topic:
                 print("topic='{0}' matched with event type '{1}'".format(t, e))
-                self._session_counter+=1
-                self._threadDetectEvent = Thread(target=self.detectEvent, args=(self._session_counter, e, msg.payload))
-                self._threadDetectEvent.start()
+                if self._isMute == True:
+                    print("mute. skip event handle")
+                else:
+                    self._session_counter+=1
+                    self._threadDetectEvent = Thread(target=self.detectEvent, args=(self._session_counter, e, msg.payload))
+                    self._threadDetectEvent.start()
+                    
                 #self.detectEvent(self._session_counter, e, msg.payload)
         print("done onMqttMessage")
 
@@ -277,12 +297,15 @@ class ShomeAssistant(Thread):
             if frame_count >= self._porcupine.frame_length:
                 pcm = struct.unpack_from("h" * self._porcupine.frame_length, in_data)
                 result = self._porcupine.process(pcm)
-                if num_keywords == 1 and result:
-                    print('[%s] detected keyword' % str(datetime.now()))    
-                    self.playSound(self._wake_sound_file, False)   
-                    self.stopDetectHotword()                    
-                    self._session_counter+=1
-                    self.runDetectIntent(self._session_counter)
+                if self._isMute == True:
+                    print("mute. skip event handle")
+                else:
+                    if num_keywords == 1 and result:
+                        print('[%s] detected keyword' % str(datetime.now()))    
+                        self.playSound(self._wake_sound_file, False)   
+                        self.stopDetectHotword()                    
+                        self._session_counter+=1
+                        self.runDetectIntent(self._session_counter)
                            
             return None, pyaudio.paContinue
 
