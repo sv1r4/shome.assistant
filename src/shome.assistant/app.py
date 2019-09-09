@@ -407,9 +407,13 @@ class ShomeAssistant(Thread):
             parameters = parameters)
 
         query_input = dialogflow.types.QueryInput(event=event_input)
-
-        response = session_client.detect_intent(session=session, query_input=query_input)
-        self.handleDialogflowResponse(response)
+        
+        try:
+            response = session_client.detect_intent(session=session, query_input=query_input)
+            self.handleDialogflowResponse(response)
+        except:
+            print("error detect event")
+            self._isEndConversation = True
 
         if not self._isEndConversation:            
             self.playSound(self._wake_sound_file)          
