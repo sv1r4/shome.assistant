@@ -40,7 +40,6 @@ deploy:laptop-assitant:
     - docker run --privileged --restart always -ti -d -e PROJECT_ID=$PROJECT_ID -e SENSIVITY=$SENSIVITY -e "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/service_key.json" -e MQTT_HOST=$MQTT_HOST -e MQTT_PORT=$MQTT_PORT -v "$SECRET_DIR:/app/secrets/" --name=$DEPLOY_CONTAINER_NAME $TAG  
   only:
     - master
-    - develop
   tags:
     - laptop-assistant
     - shome
