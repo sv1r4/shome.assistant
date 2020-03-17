@@ -476,7 +476,7 @@ class ShomeAssistant(Thread):
         #    time.sleep(0.1)
         
     def connectMqtt(self):
-        print('mqtt connecting to {0}:{1}..'.format(self._mqtt_host, port = self._mqtt_port))
+        print('mqtt connecting to {0}:{1}..'.format(self._mqtt_host, self._mqtt_port))
         self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)
         self._mqtt.loop_start()  
         thread = Thread(target=self.reconnectMqtt, args=())
@@ -487,7 +487,7 @@ class ShomeAssistant(Thread):
         while True:            
             print('mqtt reconnecting..')
             #reconnect with interval
-            time.sleep(60)
+            time.sleep(300)
             try:                   
               #  self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)   
                 self._mqtt.reconnect()
