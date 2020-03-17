@@ -60,7 +60,7 @@ class ShomeAssistant(Thread):
         self._input_device_index = input_device_index
         self._wake_sound_file = "./resources/sounds/med_ui_wakesound_touch.wav"
         self._project_id = project_id
-        self._mqtt = mqtt.Client(client_id="shome-assist", clean_session=True, userdata=None, protocol=MQTTv31, transport="tcp")
+        self._mqtt = mqtt.Client(client_id="shome-assist", clean_session=True, userdata=None, transport="tcp")
         self._mqtt.on_connect = self.onMqttConnect
         self._mqtt.on_message = self.onMqttMessage
         self._mqtt_host = mqtt_host
