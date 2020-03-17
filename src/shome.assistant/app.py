@@ -60,7 +60,7 @@ class ShomeAssistant(Thread):
         self._input_device_index = input_device_index
         self._wake_sound_file = "./resources/sounds/med_ui_wakesound_touch.wav"
         self._project_id = project_id
-        self._mqtt = mqtt.Client()
+        self._mqtt = mqtt.ClientClient(client_id="shome-assist", clean_session=True, userdata=None, protocol=MQTTv31, transport="tcp")
         self._mqtt.on_connect = self.onMqttConnect
         self._mqtt.on_message = self.onMqttMessage
         self._mqtt_host = mqtt_host
@@ -477,7 +477,7 @@ class ShomeAssistant(Thread):
         
     def connectMqtt(self):
         print('mqtt connecting to {0}:{1}..'.format(self._mqtt_host, self._mqtt_port))
-        self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 0)
+        self._mqtt.connect_async(host = self._mqtt_host, port = self._mqtt_port, keepalive = 120)
         self._mqtt.loop_start()  
         thread = Thread(target=self.reconnectMqtt, args=())
         thread.daemon = True
