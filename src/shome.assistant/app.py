@@ -81,6 +81,8 @@ class ShomeAssistant(Thread):
         self._isEndConversation = True
         self._isMute = False
         self._muteTopic = "assist/c/mute"
+        self._startDetectIntentEventTopic = "assist/e/intent/start"
+        self._endDetectIntentEventTopic = "assist/e/intent/end"
      
 
     def onMqttConnect(self, client, userdata, flags, rc):
@@ -281,7 +283,9 @@ class ShomeAssistant(Thread):
             self.stopDetectIntent()   
            
             if self._isEndConversation:
-                print('end conversation')                
+                print('end conversation')                   
+                print("send mqtt end detectinetnt event")
+                self._mqtt.publish(self._endDetectIntentEventTopic, "1")             
                 self.runDetectHotword()
             else:      
                 self.playSound(self._wake_sound_file)          
@@ -325,6 +329,8 @@ class ShomeAssistant(Thread):
                         self.playSound(self._wake_sound_file, False)   
                         self.stopDetectHotword()                    
                         self._session_counter+=1
+                        print("send mqtt run detectinetnt event")
+                        self._mqtt.publish(self._startDetectIntentEventTopic, "1")
                         self.runDetectIntent(self._session_counter)
                            
             return None, pyaudio.paContinue
@@ -418,8 +424,8 @@ class ShomeAssistant(Thread):
         if not self._isEndConversation:            
             self.playSound(self._wake_sound_file)          
             print('event conversation continue')            
-            self.stopDetectHotword()                    
-            self.runDetectIntent(session_id)
+            self.stopDetectHotword()   
+            self.runDetectIntent(session_id)            
         else:
             print('event conversation finished')            
             self.stopDetectIntent()
