@@ -22,9 +22,9 @@ import soundfile
 
 import dialogflow_v2 as dialogflow
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
+sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
 
-import pvporcupine
+from porcupine import Porcupine
 
 import paho.mqtt.client as mqtt
 
@@ -338,7 +338,7 @@ class ShomeAssistant(Thread):
         
         sample_rate = None
         try:
-            self._porcupine = pvporcupine.create(
+            self._porcupine = Porcupine(
                 library_path=self._library_path,
                 model_path=self._model_file_path,
                 keyword_paths=self._keyword_file_paths,
