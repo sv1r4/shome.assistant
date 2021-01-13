@@ -340,8 +340,8 @@ class ShomeAssistant(Thread):
         try:
             self._porcupine = Porcupine(
                 library_path=self._library_path,
-                model_path=self._model_file_path,
-                keyword_paths=self._keyword_file_paths,
+                model_file_path=self._model_file_path,
+                keyword_file_paths=self._keyword_file_paths,
                 sensitivities=[self._sensitivity] * num_keywords)
             print("purcipine sensivity {}".format(self._sensitivity))
             sample_rate = self._porcupine.sample_rate
