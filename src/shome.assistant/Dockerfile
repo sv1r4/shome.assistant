@@ -13,7 +13,8 @@ RUN pip3 install pyaudio \
   dialogflow \
   simpleaudio \
   paho-mqtt \
-  google-cloud-datastore
+  google-cloud-datastore \
+  pvporcupine
 
 FROM base as final
 RUN apt-get update && apt-get install -y curl \
