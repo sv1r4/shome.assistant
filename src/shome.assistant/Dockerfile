@@ -3,6 +3,7 @@ RUN apt-get update && apt-get install -y curl \
    libasound2-dev \
    libsndfile-dev \
    portaudio19-dev \
+   python3-pyaudio \
    software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa
 
