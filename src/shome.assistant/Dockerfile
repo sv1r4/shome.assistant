@@ -26,8 +26,7 @@ RUN python3.9 -m pip install --ignore-installed --upgrade \
   dialogflow \
   simpleaudio \
   paho-mqtt \
-  google-cloud-datastore \
-  six
+  google-cloud-datastore
 
 FROM base as final
 RUN apt-get update && apt-get install -y curl \
