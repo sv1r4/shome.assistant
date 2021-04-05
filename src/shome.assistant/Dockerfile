@@ -9,6 +9,7 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && apt-get install -y python3.9 \
+  python3.9-dev \
   python3-pip \
   python3.9-distutils
    
