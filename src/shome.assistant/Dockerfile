@@ -12,10 +12,13 @@ RUN apt update && apt-get install -y python3.9 \
   python3.9-distutils
    
 WORKDIR /app
-RUN pip3 install --upgrade setuptools \
+RUN python3.9 -m pip install --ignore-installed --upgrade \
+    setuptools \
     pip \
+    six \
     distlib
-RUN pip3 install pyaudio \
+RUN python3.9 -m pip install --ignore-installed --upgrade \
+  pyaudio \
   soundfile \
   numpy \
   dialogflow \
