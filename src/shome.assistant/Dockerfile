@@ -14,12 +14,12 @@ RUN apt update && apt-get install -y python3.9 \
   python3.9-distutils
    
 WORKDIR /app
-RUN python3.9 -m pip install --ignore-installed --upgrade \
+RUN python3 -m pip install --ignore-installed --upgrade \
     setuptools \
     pip \
     six \
     distlib
-RUN python3.9 -m pip install --ignore-installed --upgrade \
+RUN python3 -m pip install --ignore-installed --upgrade \
   pyaudio \
   soundfile \
   numpy \
@@ -38,7 +38,7 @@ ENV SENSIVITY=1
 ENV KEYWORD_FILE_PATHS=resources/keyword_files/linux/alexa_linux.ppn
 ENV MODEL_FILE_PATH=./lib/common/porcupine_params.pv
 COPY . .
-CMD python3.9 app.py --keyword_file_paths $KEYWORD_FILE_PATHS \
+CMD python3 app.py --keyword_file_paths $KEYWORD_FILE_PATHS \
    --model_file_path $MODEL_FILE_PATH \
    --sensitivity $SENSIVITY \
    --project_id $PROJECT_ID \
