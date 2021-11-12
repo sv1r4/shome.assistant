@@ -207,7 +207,7 @@ class ShomeAssistant(Thread):
         self._isIntentDetect = True
 
         session_client = dialogflow.SessionsClient()
-        audio_encoding = dialogflow.enums.AudioEncoding.AUDIO_ENCODING_LINEAR_16
+        audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16
         sample_rate_hertz = 16000
         language_code = 'ru-RU'
         session_id = '{}'.format(session_id)
@@ -227,7 +227,7 @@ class ShomeAssistant(Thread):
             audio_format = pyaudio.paInt16
             frame_length = 4096
 
-            audio_config = dialogflow.types.InputAudioConfig(
+            audio_config = dialogflow.InputAudioConfig(
             audio_encoding=audio_encoding, language_code=language_code,
             sample_rate_hertz=sample_rate_hertz)
            
@@ -247,12 +247,12 @@ class ShomeAssistant(Thread):
             print("Waiting for command ...\n")
 
             def request_generator(audio_config):
-                query_input = dialogflow.types.QueryInput(audio_config=audio_config)
-                output_audio_config = dialogflow.types.OutputAudioConfig(
-                    audio_encoding=dialogflow.enums.OutputAudioEncoding.OUTPUT_AUDIO_ENCODING_LINEAR_16)
+                query_input = dialogflow.QueryInput(audio_config=audio_config)
+                output_audio_config = dialogflow.OutputAudioConfig(
+                    audio_encoding=dialogflow.OutputAudioEncoding.OUTPUT_AUDIO_ENCODING_LINEAR_16)
 
                 # The first request contains the configuration.
-                yield dialogflow.types.StreamingDetectIntentRequest(
+                yield dialogflow.StreamingDetectIntentRequest(
                     session=session_path, query_input=query_input,
                     single_utterance=True,
                     output_audio_config=output_audio_config)
@@ -266,7 +266,7 @@ class ShomeAssistant(Thread):
                     if not self._isIntentDetect:
                         print("done intent")
                         return
-                    yield dialogflow.types.StreamingDetectIntentRequest(input_audio=chunk)  
+                    yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)  
                 
 
                          
@@ -409,10 +409,10 @@ class ShomeAssistant(Thread):
                 parameters[nKey] = value
         
         
-        event_input = dialogflow.types.EventInput(name=event_name, language_code='ru-RU',
+        event_input = dialogflow.EventInput(name=event_name, language_code='ru-RU',
             parameters = parameters)
 
-        query_input = dialogflow.types.QueryInput(event=event_input)
+        query_input = dialogflow.QueryInput(event=event_input)
         
         try:
             response = session_client.detect_intent(session=session, query_input=query_input)
