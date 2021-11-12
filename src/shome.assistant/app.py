@@ -20,7 +20,7 @@ import numpy as np
 import pyaudio
 import soundfile
 
-import dialogflow_v2 as dialogflow
+from google.cloud import dialogflow
 
 sys.path.append(os.path.join(os.path.dirname(__file__), './binding/python'))
 

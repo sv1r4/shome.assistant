@@ -23,7 +23,7 @@ RUN python3 -m pip install --ignore-installed --upgrade \
   pyaudio \
   soundfile \
   numpy \
-  dialogflow==2.0.0 \
+  google-cloud-dialogflow \
   simpleaudio \
   paho-mqtt \
   google-cloud-datastore
